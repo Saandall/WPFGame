@@ -174,7 +174,7 @@ namespace WPFGame
                // А) ТВЕРДЫЙ ПОЛ
                if ((string)element.Tag == "Ground")
                {
-                  if (playerY + Player.Height >= Canvas.GetTop(element) && playerY < Canvas.GetTop(element))
+                  if (velocityY >= 0 && playerY + Player.Height >= Canvas.GetTop(element) && playerY < Canvas.GetTop(element))
                   {
                      playerY = Canvas.GetTop(element) - Player.Height;
                      velocityY = 0;
