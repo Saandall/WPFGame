@@ -1,0 +1,32 @@
+﻿<Window x:Class="WPFGame.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Моя первая 2D игра" Height="450" Width="800"
+        KeyDown="OnKeyDown" KeyUp="OnKeyUp">
+
+
+    <!-- Canvas - это наша координатная сетка. Верхний левый угол это X=0, Y=0 -->
+    <Canvas Name="GameArea" Background="Black">
+
+        <!-- Наш Игрок. Задаем ему размер, цвет и стартовые координаты (Left = X, Top = Y) -->
+        <Rectangle Name="Player" Width="50" Height="50" Fill="LimeGreen" 
+                   Canvas.Left="100" Canvas.Top="100" />
+
+        <!-- Первый этаж (Пол) -->
+        <Rectangle Tag="Ground" Width="800" Height="50" Fill="DarkGray" Canvas.Left="0" Canvas.Top="350" />
+
+        <!-- Второй этаж (Балкон) -->
+        <Rectangle Tag="Platform" Width="300" Height="20" Fill="Aqua" Canvas.Left="400" Canvas.Top="200" />
+
+        <Rectangle Tag="Platform" Width="300" Height="20" Fill="Aqua" Canvas.Left="400" Canvas.Top="100" />
+
+        <!-- Стена -->
+        <!--
+        <Rectangle Tag="Ground" Width="20" Height="200" Fill="DarkGray" Canvas.Left="500" Canvas.Top="150" />-->
+
+        <!-- Лестница, соединяющая этажи -->
+        <Rectangle Tag="Ladder" Width="40" Height="250" Fill="SaddleBrown" Canvas.Left="450" Canvas.Top="100" HorizontalAlignment="Center" VerticalAlignment="Top" />
+
+
+    </Canvas>
+</Window>
