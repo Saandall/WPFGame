@@ -6,11 +6,11 @@
 
 
     <!-- Canvas - это наша координатная сетка. Верхний левый угол это X=0, Y=0 -->
-    <Canvas Name="GameArea" Background="Black">
+    <!-- Xaml рисует слоями, поэтому объекты, которые находятся выше в строчках кода рисуются первыми -->
+    <!-- Ранее игрок отрисовывался самым первым, поэтому был позади лестницы, платформ и т.д.. Сейчас вроде норм -->
+        <Canvas Name="GameArea" Background="Black">
 
-        <!-- Наш Игрок. Задаем ему размер, цвет и стартовые координаты (Left = X, Top = Y) -->
-        <Rectangle Name="Player" Width="50" Height="50" Fill="LimeGreen" 
-                   Canvas.Left="100" Canvas.Top="100" />
+        
 
         <!-- Первый этаж (Пол) -->
         <Rectangle Tag="Ground" Width="800" Height="50" Fill="DarkGray" Canvas.Left="0" Canvas.Top="350" />
@@ -27,6 +27,8 @@
         <!-- Лестница, соединяющая этажи -->
         <Rectangle Tag="Ladder" Width="40" Height="250" Fill="SaddleBrown" Canvas.Left="450" Canvas.Top="100" HorizontalAlignment="Center" VerticalAlignment="Top" />
 
-
+        <!-- Наш Игрок. Задаем ему размер, цвет и стартовые координаты (Left = X, Top = Y) -->
+        <Rectangle Name="Player" Width="50" Height="50" Fill="LimeGreen" 
+           Canvas.Left="100" Canvas.Top="100" />
     </Canvas>
 </Window>

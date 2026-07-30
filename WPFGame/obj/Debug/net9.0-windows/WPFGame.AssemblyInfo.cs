@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WPFGame")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b2c7cf78e4feb23c88338bb0b7a09bba9db0ffdc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6354f4831254f50d920692a6639b6991d30f864c")]
 [assembly: System.Reflection.AssemblyProductAttribute("WPFGame")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WPFGame")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
