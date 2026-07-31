@@ -29,7 +29,7 @@
         <Rectangle Name="Player" Width="50" Height="50" Fill="LimeGreen" Canvas.Left="100" Canvas.Top="100" />
 
         <!-- Склон ВВЕРХ-ВПРАВО ( / ). Например, ведет на балкон -->
-        <Rectangle Tag="SlopeUpRight" Width="178" Height="150" Fill="LightSlateGray" Opacity="0.8" Canvas.Left="222" Canvas.Top="200" HorizontalAlignment="Left" VerticalAlignment="Center" />
+        <Rectangle Tag="SlopeUpRight" Width="178" Height="150" Fill="LightSlateGray" Opacity="0.8" Canvas.Left="100" Canvas.Top="200" HorizontalAlignment="Left" VerticalAlignment="Center" />
 
         <!-- Склон ВВЕРХ-ВЛЕВО ( \ ) -->
         <Rectangle Tag="SlopeUpLeft" Width="100" Height="150" Fill="LightSlateGray" Opacity="0.8" Canvas.Left="700" Canvas.Top="200" HorizontalAlignment="Left" VerticalAlignment="Center" />
