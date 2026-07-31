@@ -164,6 +164,13 @@ namespace WPFGame
          bool onGround = false;
          bool touchingLadder = false;
 
+
+         // НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ПЛАВНОГО ПОЛА
+         // Ставим изначально "пол" где-то бесконечно низко
+         double highestFloorY = double.MaxValue;
+         bool foundFloor = false;
+         double feetY = playerY + Player.Height;
+
          // 1. ЦИКЛ КОЛЛИЗИЙ
          foreach (var element in GameArea.Children.OfType<Rectangle>())
          {
@@ -174,33 +181,83 @@ namespace WPFGame
                // А) ТВЕРДЫЙ ПОЛ
                if ((string)element.Tag == "Ground")
                {
-                  if (playerY + Player.Height >= Canvas.GetTop(element) && playerY < Canvas.GetTop(element))
+                  double floorY = Canvas.GetTop(element);
+                  if (velocityY >= 0 && feetY >= floorY && playerY < floorY)
                   {
-                     playerY = Canvas.GetTop(element) - Player.Height;
-                     velocityY = 0;
-                     onGround = true;
+                     if (floorY < highestFloorY) highestFloorY = floorY; // Запоминаем самый высокий пол!
+                     foundFloor = true;
                   }
                }
                // Б) ПРОПУСКАЕМАЯ ПЛАТФОРМА (Балкон)
                else if ((string)element.Tag == "Platform")
                {
-                  double feetY = playerY + Player.Height;
                   double platformTop = Canvas.GetTop(element);
 
                   if (velocityY >= 0 && !goDown && feetY >= platformTop && feetY <= platformTop + 15)
                   {
-                     playerY = platformTop - Player.Height;
-                     velocityY = 0;
-                     onGround = true;
+                     if (platformTop < highestFloorY) highestFloorY = platformTop;
+                     foundFloor = true;
                   }
                }
                // В) ЛЕСТНИЦА
                else if ((string)element.Tag == "Ladder")
                {
                   touchingLadder = true;
-                  // Мы удалили расчет центра лестницы
+                  
+               }
+               // Ступенчатая лестница /
+               else if ((string)element.Tag == "SlopeUpRight")
+               {
+                  double slopeLeft = Canvas.GetLeft(element);
+                  double slopeWidth = element.Width;
+                  double slopeHeight = element.Height;
+                  double slopeBottom = Canvas.GetTop(element) + slopeHeight;
+
+                  // Считаем правый край игрока по X
+                  double targetX = playerX + Player.Width;
+                  double progress = (targetX - slopeLeft) / slopeWidth;
+
+                  progress = Math.Max(0, Math.Min(1, progress)); // Защита от выхода за рамки
+
+                  double currentFloorY = slopeBottom - (progress * slopeHeight);
+
+                  // Проверяем: падаем ли мы, и находятся ли наши ноги рядом с диагональю (допуск 20 пикселей)
+                  if (velocityY >= 0 && feetY >= currentFloorY && feetY <= currentFloorY + 20)
+                  {
+                     if (currentFloorY < highestFloorY) highestFloorY = currentFloorY;
+                     foundFloor = true;
+                  }
+               }
+               // Ступенчатая лестница \
+               else if ((string)element.Tag == "SlopeUpLeft")
+               {
+                  double slopeLeft = Canvas.GetLeft(element);
+                  double slopeTop = Canvas.GetTop(element);
+                  double slopeWidth = element.Width;
+                  double slopeHeight = element.Height;
+                  double slopeBottom = slopeTop + slopeHeight;
+
+                  double targetX = playerX;
+                  double progress = (targetX - slopeLeft) / slopeWidth;
+                  progress = Math.Max(0, Math.Min(1, progress));
+
+                  // Математика ИНАЯ: пол начинается вверху (slopeTop) и спускается к низу (slopeBottom)
+                  double currentFloorY = slopeTop + (progress * slopeHeight);
+
+                  if (velocityY >= 0 && feetY >= currentFloorY && feetY <= currentFloorY + 20)
+                  {
+                     if (currentFloorY < highestFloorY) highestFloorY = currentFloorY;
+                     foundFloor = true;
+                  }
                }
             }
+         }
+
+         if (foundFloor)
+         {
+            playerY = highestFloorY - Player.Height;
+            velocityY = 0;
+            onGround = true;
          }
 
          // 2. ЛОГИКА ЛЕСТНИЦЫ
@@ -246,7 +303,7 @@ namespace WPFGame
 
          // Ограничение экрана
          if (playerX < 0) playerX = 0;
-         if (playerX > 750) playerX = 750;
+         if (playerX > 850) playerX = 850;
 
          // 4. ВИЗУАЛ
          Canvas.SetLeft(Player, playerX);

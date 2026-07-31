@@ -17,3 +17,4 @@ C:\Users\Fugl\source\repos\WPFGame\WPFGame\obj\Debug\net9.0-windows\refint\WPFGa
 C:\Users\Fugl\source\repos\WPFGame\WPFGame\obj\Debug\net9.0-windows\WPFGame.pdb
 C:\Users\Fugl\source\repos\WPFGame\WPFGame\obj\Debug\net9.0-windows\WPFGame.genruntimeconfig.cache
 C:\Users\Fugl\source\repos\WPFGame\WPFGame\obj\Debug\net9.0-windows\ref\WPFGame.dll
+C:\Users\Fugl\source\repos\WPFGame\WPFGame\obj\Debug\net9.0-windows\WPFGame.sourcelink.json
