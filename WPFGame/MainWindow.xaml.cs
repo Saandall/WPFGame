@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading; // Нужно для таймера!
+using System.Windows.Threading; // Нужно для таймера
 using System.Windows.Shapes;
 using WPFGame.Level;
 
@@ -35,24 +35,22 @@ namespace WPFGame
             InitializeComponent();
 
             // Загружаем стартовую комнату из данных и создаём для неё тайлы на Canvas.
-            // GameTick ничего менять не пришлось — он как искал Rectangle с нужным Tag,
-            // так и продолжает искать, ему всё равно, откуда они взялись.
             RoomTemplate startRoom = TestRooms.Room1();
             RoomSpawner.Spawn(GameArea, startRoom);
 
+            // Начальные координаты ГГ
             playerX = startRoom.PlayerStartX;
             playerY = startRoom.PlayerStartY;
             Canvas.SetLeft(Player, playerX);
             Canvas.SetTop(Player, playerY);
 
-            // Настраиваем таймер: как часто он будет "тикать"
-            // TimeSpan.FromMilliseconds(16) — это примерно 60 кадров в секунду (1000мс / 60)
+            // Настраиваем таймер
             gameTimer.Interval = TimeSpan.FromMilliseconds(16);
 
-            // Говорим таймеру: "При каждом тике вызывай метод GameTick"
+            // При каждом тике вызываем метод GameTick
             gameTimer.Tick += GameTick;
 
-            // Запускаем таймер!
+            // Запускаем таймер
             gameTimer.Start();
         }
 
@@ -196,11 +194,11 @@ namespace WPFGame
                         double floorY = Canvas.GetTop(element);
                         if (velocityY >= 0 && feetY >= floorY && playerY < floorY)
                         {
-                            if (floorY < highestFloorY) highestFloorY = floorY; // Запоминаем самый высокий пол!
+                            if (floorY < highestFloorY) highestFloorY = floorY; // Запоминаем самый высокий пол
                             foundFloor = true;
                         }
                     }
-                    // Б) ПРОПУСКАЕМАЯ ПЛАТФОРМА (Балкон)
+                    // Б) ПРОПУСКАЕМАЯ ПЛАТФОРМА
                     else if ((string)element.Tag == "Platform")
                     {
                         double platformTop = Canvas.GetTop(element);
@@ -217,7 +215,7 @@ namespace WPFGame
                         touchingLadder = true;
 
                     }
-                    // Ступенчатая лестница /
+                    // Ступенчатая лестница
                     else if ((string)element.Tag == "SlopeUpRight")
                     {
                         double slopeLeft = Canvas.GetLeft(element);
