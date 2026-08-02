@@ -32,14 +32,46 @@ namespace WPFGame.Level
             return room;
         }
 
+        // Большая комната — специально шире экрана (2400 против viewport 960), чтобы
+        // проверить, как камера следует за игроком и упирается в границы комнаты.
         public static RoomTemplate Room2()
         {
-            var room = new RoomTemplate { Id = "room2", Width = 960, Height = 540 };
+            var room = new RoomTemplate { Id = "room2", Width = 2400, Height = 540 };
 
-            room.Tiles.Add(new TileData(TileType.Ground, 0, FloorY, 960, FloorHeight));
+            room.Tiles.Add(new TileData(TileType.Ground, 0, FloorY, 2400, FloorHeight));
+
+            // Платформы просто как визуальные ориентиры, чтобы движение камеры было заметно
+            room.Tiles.Add(new TileData(TileType.Platform, 600, FloorY - 150, 150, 20));
+            room.Tiles.Add(new TileData(TileType.Platform, 1200, FloorY - 150, 150, 20));
+            room.Tiles.Add(new TileData(TileType.Platform, 1800, FloorY - 150, 150, 20));
 
             room.Doors[Direction.Left] = (FloorY - DoorSize, FloorY);
             room.EntryPoints[Direction.Left] = (DoorSize, FloorY - PlayerHeight);
+
+            room.Doors[Direction.Right] = (FloorY - DoorSize, FloorY);
+            room.EntryPoints[Direction.Right] = (2400 - DoorSize, FloorY - PlayerHeight);
+
+            return room;
+        }
+
+        // Комната, большая и по ширине, и по высоте — проверить упор камеры во все 4 края.
+        public static RoomTemplate Room4()
+        {
+            var room = new RoomTemplate { Id = "room4", Width = 1200, Height = 1600 };
+
+            const double tallFloorY = 1520; // своя высота пола — комната намного выше остальных
+
+            room.Tiles.Add(new TileData(TileType.Ground, 0, tallFloorY, 1200, 80));
+
+            // Лестница на всю высоту комнаты — для проверки вертикальной камеры
+            room.Tiles.Add(new TileData(TileType.Ladder, 580, 0, 40, tallFloorY));
+
+            // Платформы как визуальные ориентиры по пути наверх
+            room.Tiles.Add(new TileData(TileType.Platform, 750, 400, 150, 20));
+            room.Tiles.Add(new TileData(TileType.Platform, 300, 900, 150, 20));
+
+            room.Doors[Direction.Left] = (tallFloorY - DoorSize, tallFloorY);
+            room.EntryPoints[Direction.Left] = (DoorSize, tallFloorY - PlayerHeight);
 
             return room;
         }

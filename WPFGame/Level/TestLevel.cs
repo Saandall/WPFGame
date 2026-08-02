@@ -13,16 +13,21 @@ namespace WPFGame.Level
             var room1 = TestRooms.Room1();
             var room2 = TestRooms.Room2();
             var room3 = TestRooms.Room3();
+            var room4 = TestRooms.Room4();
 
             rooms[room1.Id] = room1;
             rooms[room2.Id] = room2;
             rooms[room3.Id] = room3;
+            rooms[room4.Id] = room4;
 
             connections[(room1.Id, Direction.Right)] = room2.Id;
             connections[(room2.Id, Direction.Left)] = room1.Id;
 
             connections[(room1.Id, Direction.Top)] = room3.Id;
             connections[(room3.Id, Direction.Bottom)] = room1.Id;
+
+            connections[(room2.Id, Direction.Right)] = room4.Id;
+            connections[(room4.Id, Direction.Left)] = room2.Id;
         }
 
         public static RoomTemplate StartRoom => rooms["room1"];
