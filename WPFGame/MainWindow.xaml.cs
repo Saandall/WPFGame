@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading; // Нужно для таймера
+using System.Windows.Threading; // Нужно для таймера!
 using System.Windows.Shapes;
 using WPFGame.Level;
 
@@ -22,7 +22,7 @@ namespace WPFGame
         private bool isClimbing = false;
 
 
-        private int speed = 5;
+        private int speed = 10;
         private double gravity = 0.8; // Сила гравитации 
         private double velocityY = 0.0; // текущая вертикальная скорость
 
@@ -30,27 +30,37 @@ namespace WPFGame
         // Создаем таймер
         private DispatcherTimer gameTimer = new DispatcherTimer();
 
+        // Хранит текущую комнату и умеет переключать её на соседнюю
+        private RoomManager roomManager;
+
+        // Какая часть комнаты сейчас видна
+        private CameraController camera = new CameraController(viewportWidth: 960, viewportHeight: 540, deadZoneWidth: 300, deadZoneHeight: 150);
+
         public MainWindow()
         {
             InitializeComponent();
 
-            // Загружаем стартовую комнату из данных и создаём для неё тайлы на Canvas.
-            RoomTemplate startRoom = TestRooms.Room1();
-            RoomSpawner.Spawn(GameArea, startRoom);
+            // RoomManager сам спавнит стартовую комнату и дальше сам следит,
+            // что сейчас лежит на Canvas — нам об этом заботиться больше не нужно.
+            roomManager = new RoomManager(GameArea, TestLevel.StartRoom);
 
-            // Начальные координаты ГГ
-            playerX = startRoom.PlayerStartX;
-            playerY = startRoom.PlayerStartY;
+            playerX = roomManager.CurrentRoom.PlayerStartX;
+            playerY = roomManager.CurrentRoom.PlayerStartY;
             Canvas.SetLeft(Player, playerX);
             Canvas.SetTop(Player, playerY);
 
-            // Настраиваем таймер
+            camera.SnapTo(playerX, playerY, Player.Width, Player.Height, roomManager.CurrentRoom.Width, roomManager.CurrentRoom.Height);
+            CameraTransform.X = -camera.X;
+            CameraTransform.Y = -camera.Y;
+
+            // Настраиваем таймер: как часто он будет "тикать"
+            // TimeSpan.FromMilliseconds(16) — это примерно 60 кадров в секунду (1000мс / 60)
             gameTimer.Interval = TimeSpan.FromMilliseconds(16);
 
-            // При каждом тике вызываем метод GameTick
+            // Говорим таймеру: "При каждом тике вызывай метод GameTick"
             gameTimer.Tick += GameTick;
 
-            // Запускаем таймер
+            // Запускаем таймер!
             gameTimer.Start();
         }
 
@@ -194,11 +204,11 @@ namespace WPFGame
                         double floorY = Canvas.GetTop(element);
                         if (velocityY >= 0 && feetY >= floorY && playerY < floorY)
                         {
-                            if (floorY < highestFloorY) highestFloorY = floorY; // Запоминаем самый высокий пол
+                            if (floorY < highestFloorY) highestFloorY = floorY; // Запоминаем самый высокий пол!
                             foundFloor = true;
                         }
                     }
-                    // Б) ПРОПУСКАЕМАЯ ПЛАТФОРМА
+                    // Б) ПРОПУСКАЕМАЯ ПЛАТФОРМА (Балкон)
                     else if ((string)element.Tag == "Platform")
                     {
                         double platformTop = Canvas.GetTop(element);
@@ -215,7 +225,7 @@ namespace WPFGame
                         touchingLadder = true;
 
                     }
-                    // Ступенчатая лестница
+                    // Ступенчатая лестница /
                     else if ((string)element.Tag == "SlopeUpRight")
                     {
                         double slopeLeft = Canvas.GetLeft(element);
@@ -311,9 +321,29 @@ namespace WPFGame
                 velocityY = -15;
             }
 
-            // Ограничение экрана
+            // Ограничение экрана — теперь по ширине ТЕКУЩЕЙ комнаты, а не фиксированное число.
+            // Иначе игрок физически не смог бы дойти до двери у правого края большой комнаты.
+            double maxX = roomManager.CurrentRoom.Width - Player.Width;
             if (playerX < 0) playerX = 0;
-            if (playerX > 850) playerX = 850;
+            if (playerX > maxX) playerX = maxX;
+
+            // Проверка перехода в другую комнату: коснулись ли края комнаты там, где есть дверь.
+            // Если да — RoomManager сам подменяет комнату на Canvas и говорит, куда поставить игрока.
+            Rect currentHitBox = new Rect(playerX, playerY, Player.Width, Player.Height);
+            var transition = roomManager.TryTransition(currentHitBox);
+            if (transition is not null)
+            {
+                (playerX, playerY) = transition.Value;
+                // Новая комната — камера сразу центрируется на игроке, а не "приезжает" из старой
+                camera.SnapTo(playerX, playerY, Player.Width, Player.Height, roomManager.CurrentRoom.Width, roomManager.CurrentRoom.Height);
+            }
+            else
+            {
+                camera.Follow(playerX, playerY, Player.Width, Player.Height, roomManager.CurrentRoom.Width, roomManager.CurrentRoom.Height);
+            }
+
+            CameraTransform.X = -camera.X;
+            CameraTransform.Y = -camera.Y;
 
             // 4. ВИЗУАЛ
             Canvas.SetLeft(Player, playerX);
