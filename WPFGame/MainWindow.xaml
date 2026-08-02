@@ -1,24 +1,19 @@
 ﻿<Window x:Class="WPFGame.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Моя первая 2D игра" Height="450" Width="900"
+        Title="Моя первая 2D игра"
+        WindowState="Maximized"
+        ResizeMode="NoResize"
         KeyDown="OnKeyDown" KeyUp="OnKeyUp">
 
+    <!-- Viewbox масштабирует содержимое под размер окна, сохраняя пропорции 1920:1080.
+         Это не камера (видно всю комнату целиком, уменьшенную) — временное решение,
+         пока не сделали настоящую камеру, которая будет показывать только часть комнаты. -->
+    <Viewbox Stretch="Uniform">
+        <Canvas Name="GameArea" Background="Black" Width="960" Height="540">
 
-    <!-- Canvas - это наша координатная сетка. Верхний левый угол это X=0, Y=0 -->
-    <!-- Xaml рисует слоями, поэтому объекты, которые находятся выше в строчках кода рисуются первыми -->
-    <!-- Ранее игрок отрисовывался самым первым, поэтому был позади лестницы, платформ и т.д.. Сейчас вроде норм -->
-    <Canvas Name="GameArea" Background="Black">
+            <Rectangle Name="Player" Width="50" Height="50" Fill="LimeGreen" Canvas.Left="100" Canvas.Top="100" Panel.ZIndex="10" />
 
-        <!-- Тайлы (пол, платформы, лестница, склоны) больше не описываются здесь руками —
-             они создаются в коде (см. MainWindow.xaml.cs -> RoomSpawner.Spawn) на основе
-             RoomTemplate. См. WPFGame.Level.TestRooms.Room1() — там сейчас лежит
-             ровно та же комната, что раньше была нарисована тут. -->
-
-        <!-- Наш Игрок остаётся в XAML как именованный элемент, т.к. на него много прямых
-             ссылок в коде (Player.Width и т.д.). ZIndex=10, чтобы тайлы (ZIndex=0),
-             добавляемые в код позже, не перекрыли игрока визуально. -->
-        <Rectangle Name="Player" Width="50" Height="50" Fill="LimeGreen" Canvas.Left="100" Canvas.Top="100" Panel.ZIndex="10" />
-
-    </Canvas>
+        </Canvas>
+    </Viewbox>
 </Window>

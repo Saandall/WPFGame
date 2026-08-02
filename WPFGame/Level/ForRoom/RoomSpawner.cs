@@ -14,24 +14,32 @@ namespace WPFGame.Level
         {
             foreach (var tile in room.Tiles)
             {
-                var rect = new Rectangle
-                {
-                    Tag = tile.Type.ToString(), // "Ground", "Platform" и т.д. — как раньше в XAML
-                    Width = tile.Width,
-                    Height = tile.Height,
-                    Fill = GetBrush(tile.Type),
-                    Opacity = GetOpacity(tile.Type)
-                };
-
-                // Zindex, чтобы тайлы всегда оказывались под игроком (кроме склонов —
-                // они и раньше в XAML были нарисованы поверх игрока, полупрозрачные).
-                Panel.SetZIndex(rect, tile.Type is TileType.SlopeUpRight or TileType.SlopeUpLeft ? 20 : 0);
-
-                Canvas.SetLeft(rect, tile.X);
-                Canvas.SetTop(rect, tile.Y);
-
-                canvas.Children.Add(rect);
+                canvas.Children.Add(CreateTile(tile));
             }
+        }
+
+        // Создаёт Rectangle под конкретный тайл, но НЕ добавляет его на Canvas —
+        // это оставляем вызывающему коду (Spawn делает это сам, RoomManager — по-своему,
+        // чтобы держать список созданных тайлов и уметь их убрать при смене комнаты).
+        public static Rectangle CreateTile(TileData tile)
+        {
+            var rect = new Rectangle
+            {
+                Tag = tile.Type.ToString(), // "Ground", "Platform" и т.д. — как раньше в XAML
+                Width = tile.Width,
+                Height = tile.Height,
+                Fill = GetBrush(tile.Type),
+                Opacity = GetOpacity(tile.Type)
+            };
+
+            // Zindex, чтобы тайлы всегда оказывались под игроком (кроме склонов —
+            // они и раньше в XAML были нарисованы поверх игрока, полупрозрачные).
+            Panel.SetZIndex(rect, tile.Type is TileType.SlopeUpRight or TileType.SlopeUpLeft ? 20 : 0);
+
+            Canvas.SetLeft(rect, tile.X);
+            Canvas.SetTop(rect, tile.Y);
+
+            return rect;
         }
 
         private static Brush GetBrush(TileType type) => type switch
