@@ -20,7 +20,7 @@ namespace WPFGame.Core
          if (key == Key.Right || key == Key.D) GoRight = isPressed;
          if (key == Key.Up || key == Key.W) GoUp = isPressed;
          if (key == Key.Down || key == Key.S) GoDown = isPressed;
-         if (key == Key.Space) Jumping = isPressed;
+         if (key == Key.Space || key == Key.Up || key == Key.W) Jumping = isPressed;
          if (key == Key.Z) Shooting = isPressed;
          if (key == Key.R) Reloading = isPressed;
       }

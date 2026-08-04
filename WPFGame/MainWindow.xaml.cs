@@ -208,7 +208,7 @@ namespace WPFGame
          AmmoText.Text = currentWeapon.IsReloading ? "Перезарядка..." : $"{currentWeapon.Ammo} / {currentWeapon.ReserveAmmo}";
 
          // ---------------------------------------------------------
-         // 4. ЛОГИКА НАПАРНИКА: КОМНАТЫ И КАМЕРА
+         // 4. КОМНАТЫ И КАМЕРА
          // ---------------------------------------------------------
          Rect currentHitBox = new Rect(myHero.X, myHero.Y, myHero.Width, myHero.Height);
          var transition = roomManager.TryTransition(currentHitBox);
