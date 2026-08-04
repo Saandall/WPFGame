@@ -53,7 +53,10 @@ namespace WPFGame.PlayerLogic
 
          // 3. ОТРАБОТКА СПРЫГИВАНИЯ
          if (dropCooldown > 0) dropCooldown--;
-         if (goDown && jumping) dropCooldown = 15;
+         if (goDown && jumping && OnGround) dropCooldown = 10; // 10 - количество кадров, которые герой является "призраком" при спрыгивании.
+                                                               // Измменить при надобности ради левел-дизайна
+                                                               // Без OnGround проверка будет выполняться каждый кадр и герой будет безостановочно падать,
+                                                               // пока кнопки не будут отжаты
          bool canStandOnPlatforms = (dropCooldown == 0) && !IsClimbing;
 
 
