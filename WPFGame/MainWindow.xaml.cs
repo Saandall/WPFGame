@@ -202,7 +202,7 @@ namespace WPFGame
          currentWeapon.Tick(Inputmanager.Shooting);
          if (Inputmanager.Reloading) currentWeapon.Reload();
          if (Inputmanager.Shooting) currentWeapon.Attack(GameArea, myHero.X, myHero.Y, myHero.FacingRight, activeBullets);
-         CombatManager.UpdateBulletsAndHits(activeBullets, activeEnemies, GameArea);
+         CombatManager.UpdateBulletsAndHits(activeBullets, activeEnemies, GameArea, roomManager.CurrentRoom.Width);
 
          // 3. ИНТЕРФЕЙС
          AmmoText.Text = currentWeapon.IsReloading ? "Перезарядка..." : $"{currentWeapon.Ammo} / {currentWeapon.ReserveAmmo}";
