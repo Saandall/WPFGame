@@ -56,8 +56,24 @@ namespace WPFGame.PlayerLogic
          if (goDown && jumping) dropCooldown = 15;
          bool canStandOnPlatforms = (dropCooldown == 0) && !IsClimbing;
 
+
+         // 6. ДВИЖЕНИЕ И ФИЗИКА
+         double currentGravity = 0.8;
+
+         if (IsClimbing)
+         {
+            currentGravity = 0;
+            VelocityY = 0;
+            if (goUp) Y -= 5;
+            if (goDown) Y += 5;
+         }
+
+         // Движение вбок
+         if (goLeft) X -= 5;
+         if (goRight) X += 5;
+
          // 4. БАЗОВАЯ ФИЗИКА КОЛЛИЗИЙ (Из Entity)
-         base.UpdatePhysics(mapElements, 0, canStandOnPlatforms);
+         base.UpdatePhysics(mapElements, currentGravity, canStandOnPlatforms);
 
          // 5. ЛОГИКА ЛЕСТНИЦЫ ИГРОКА
          if (!TouchingLadder)
@@ -99,24 +115,6 @@ namespace WPFGame.PlayerLogic
          {
             IsClimbing = false;
          }
-
-         // 6. ДВИЖЕНИЕ И ФИЗИКА
-         double currentGravity = 0.8;
-
-         if (IsClimbing)
-         {
-            currentGravity = 0;
-            VelocityY = 0;
-            if (goUp) Y -= 5;
-            if (goDown) Y += 5;
-         }
-
-         // Гравитация
-         VelocityY += currentGravity;
-
-         // Движение вбок
-         if (goLeft) X -= 5;
-         if (goRight) X += 5;
 
          // Прыжок
          if (jumping && OnGround && !IsClimbing && !goDown && !preventAutoJump)

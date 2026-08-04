@@ -35,6 +35,9 @@ namespace WPFGame.Core
       // =========================================================
       public virtual void UpdatePhysics(UIElementCollection mapElements, double gravity, bool canStandOnPlatforms)
       {
+         VelocityY += gravity;
+         Y += VelocityY;
+
          OnGround = false;
          TouchingLadder = false;
          double highestFloorY = double.MaxValue;
@@ -131,11 +134,7 @@ namespace WPFGame.Core
             OnGround = true;
          }
 
-         // 3. ПРИМЕНЕНИЕ ГРАВИТАЦИИ
-         // Если кто-то (например, игрок) отключит гравитацию снаружи (для лестницы), 
-         // он просто передаст gravity = 0
-         VelocityY += gravity;
-         Y += VelocityY;
+         
       }
 
       // Синхронизация математики с визуалом

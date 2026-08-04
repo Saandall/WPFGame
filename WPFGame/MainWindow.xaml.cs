@@ -174,7 +174,7 @@ namespace WPFGame
 
          currentWeapon = new Pistol();
 
-         Enemy dummy = new Enemy(400, 300, 50);
+         Enemy dummy = new Enemy(400, 300, 100);
          activeEnemies.Add(dummy);
          GameArea.Children.Add(dummy.VisualShape);
 
