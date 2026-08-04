@@ -8,7 +8,7 @@ namespace WPFGame.Core
    public static class CombatManager
    {
       // Метод обрабатывает все летящие пули и проверяет столкновения с врагами
-      public static void UpdateBulletsAndHits(List<Bullet> activeBullets, List<Enemy> activeEnemies, Canvas gameArea)
+      public static void UpdateBulletsAndHits(List<Bullet> activeBullets, List<Enemy> activeEnemies, Canvas gameArea, double roomWidth)
       {
          List<Bullet> bulletsToRemove = new List<Bullet>();
          List<Enemy> enemiesToRemove = new List<Enemy>();
@@ -35,7 +35,7 @@ namespace WPFGame.Core
                }
             }
 
-            if (hitSomething || bullet.IsOutOfBounds())
+            if (hitSomething || bullet.IsOutOfBounds(roomWidth))
             {
                bulletsToRemove.Add(bullet);
             }

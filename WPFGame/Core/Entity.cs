@@ -20,6 +20,10 @@ namespace WPFGame.Core
       public bool OnGround { get; protected set; }
       public bool TouchingLadder { get; protected set; }
 
+      // Для понимание верха лестницы (иначе герой будет на ней прыгать
+      public double ActiveLadderTop { get; protected set; }
+      public double ActiveLadderBottom { get; protected set; }
+
       // Визуал (прямоугольник), который WPF рисует на экране
       public Rectangle VisualShape { get; protected set; }
 
@@ -31,6 +35,9 @@ namespace WPFGame.Core
       // =========================================================
       public virtual void UpdatePhysics(UIElementCollection mapElements, double gravity, bool canStandOnPlatforms)
       {
+         VelocityY += gravity;
+         Y += VelocityY;
+
          OnGround = false;
          TouchingLadder = false;
          double highestFloorY = double.MaxValue;
@@ -67,6 +74,9 @@ namespace WPFGame.Core
                else if (tag == "Ladder")
                {
                   TouchingLadder = true;
+                  // Запоминаем верх и низ лестницы, которой коснулись
+                  ActiveLadderTop = Canvas.GetTop(element);
+                  ActiveLadderBottom = ActiveLadderTop + element.Height;
                }
                // Ступенчатая лестница /
                else if ((string)element.Tag == "SlopeUpRight")
@@ -124,11 +134,7 @@ namespace WPFGame.Core
             OnGround = true;
          }
 
-         // 3. ПРИМЕНЕНИЕ ГРАВИТАЦИИ
-         // Если кто-то (например, игрок) отключит гравитацию снаружи (для лестницы), 
-         // он просто передаст gravity = 0
-         VelocityY += gravity;
-         Y += VelocityY;
+         
       }
 
       // Синхронизация математики с визуалом

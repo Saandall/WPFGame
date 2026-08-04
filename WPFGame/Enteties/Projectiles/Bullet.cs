@@ -37,16 +37,12 @@ namespace WPFGame.Projectiles
       }
 
       // Пуля сама знает, когда ей пора исчезнуть
-      public bool IsOutOfBounds()
+      public bool IsOutOfBounds(double roomWidth)
       {
-         return X < 0 || X > 800; // 800 - ширина экрана (пока захардкодим)
+         return X < 0 || X > roomWidth; 
       }
 
       // Хитбокс пули для проверки попаданий
       public Rect HitBox => new Rect(X, Y, VisualShape.Width, VisualShape.Height);
-
-      // Начальные координаты пульки
-      //Canvas.SetLeft(VisualShape, X);
-      //Canvas.SetTop(VisualShape, Y);
    }
 }

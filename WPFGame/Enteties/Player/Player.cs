@@ -10,6 +10,11 @@ namespace WPFGame.PlayerLogic
    {
       public bool IsClimbing { get; private set; }
       public bool FacingRight { get; private set; } = true;
+
+      // Флаг нужен для того чтобы после поднятия на вершину лестницы герой 
+      // не начал сразу же прыгать
+      private bool preventAutoJump = false;
+
       private int dropCooldown = 0;
 
       public Player(double startX, double startY)
@@ -37,32 +42,23 @@ namespace WPFGame.PlayerLogic
          bool goDown = Inputmanager.GoDown;
          bool jumping = Inputmanager.Jumping;
 
+         if (!jumping)
+         {
+            preventAutoJump = false; // Палец отпустили, можно снова прыгать
+         }
+
          // 2. ОБНОВЛЯЕМ НАПРАВЛЕНИЕ ВЗГЛЯДА
          if (goLeft) FacingRight = false;
          if (goRight) FacingRight = true;
 
          // 3. ОТРАБОТКА СПРЫГИВАНИЯ
          if (dropCooldown > 0) dropCooldown--;
-         if (goDown && jumping) dropCooldown = 15;
+         if (goDown && jumping && OnGround) dropCooldown = 10; // 10 - количество кадров, которые герой является "призраком" при спрыгивании.
+                                                               // Измменить при надобности ради левел-дизайна
+                                                               // Без OnGround проверка будет выполняться каждый кадр и герой будет безостановочно падать,
+                                                               // пока кнопки не будут отжаты
          bool canStandOnPlatforms = (dropCooldown == 0) && !IsClimbing;
 
-         // 4. БАЗОВАЯ ФИЗИКА КОЛЛИЗИЙ (Из Entity)
-         base.UpdatePhysics(mapElements, 0, canStandOnPlatforms);
-
-         // 5. ЛОГИКА ЛЕСТНИЦЫ ИГРОКА
-         if (!TouchingLadder) IsClimbing = false;
-
-         if (TouchingLadder && !IsClimbing && (goUp || goDown))
-         {
-            IsClimbing = true;
-            VelocityY = 0;
-         }
-
-         // Сомнительная проверка. Проверить на необходимость. Идейно нужна при спуске и контакте с Ground
-         if (IsClimbing && OnGround && (goLeft || goRight))
-         {
-            IsClimbing = false;
-         }
 
          // 6. ДВИЖЕНИЕ И ФИЗИКА
          double currentGravity = 0.8;
@@ -75,15 +71,55 @@ namespace WPFGame.PlayerLogic
             if (goDown) Y += 5;
          }
 
-         // Гравитация
-         VelocityY += currentGravity;
-
          // Движение вбок
          if (goLeft) X -= 5;
          if (goRight) X += 5;
 
+         // 4. БАЗОВАЯ ФИЗИКА КОЛЛИЗИЙ (Из Entity)
+         base.UpdatePhysics(mapElements, currentGravity, canStandOnPlatforms);
+
+         // 5. ЛОГИКА ЛЕСТНИЦЫ ИГРОКА
+         if (!TouchingLadder)
+         {
+            if (IsClimbing)
+            {
+               preventAutoJump = true;
+            }
+            IsClimbing = false;
+         }
+         if (TouchingLadder && !IsClimbing)
+         {
+            double feetY = Y + Height;
+
+            // Если наши ноги находятся на самом верху лестницы (в пределах 10 пикселей от её верхушки)
+            if (feetY <= ActiveLadderTop + 10)
+            {
+               // Нам разрешено хвататься за неё ТОЛЬКО если мы жмем "ВНИЗ" (хотим спуститься)
+               if (goDown)
+               {
+                  IsClimbing = true;
+                  VelocityY = 0;
+               }
+            }
+            // Если мы находимся ниже верхушки лестницы (на самой лестнице)
+            else
+            {
+               // Хватаемся стандартно по нажатию Вверх или Вниз
+               if (goUp || goDown)
+               {
+                  IsClimbing = true;
+                  VelocityY = 0;
+               }
+            }
+         }
+
+         if (IsClimbing && OnGround && (goLeft || goRight) && !goUp && !goDown)
+         {
+            IsClimbing = false;
+         }
+
          // Прыжок
-         if (jumping && OnGround && !IsClimbing && !goDown)
+         if (jumping && OnGround && !IsClimbing && !goDown && !preventAutoJump)
          {
             VelocityY = -15;
          }

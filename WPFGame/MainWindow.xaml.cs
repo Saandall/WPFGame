@@ -174,7 +174,7 @@ namespace WPFGame
 
          currentWeapon = new Pistol();
 
-         Enemy dummy = new Enemy(400, 300, 50);
+         Enemy dummy = new Enemy(400, 300, 100);
          activeEnemies.Add(dummy);
          GameArea.Children.Add(dummy.VisualShape);
 
@@ -202,13 +202,13 @@ namespace WPFGame
          currentWeapon.Tick(Inputmanager.Shooting);
          if (Inputmanager.Reloading) currentWeapon.Reload();
          if (Inputmanager.Shooting) currentWeapon.Attack(GameArea, myHero.X, myHero.Y, myHero.FacingRight, activeBullets);
-         CombatManager.UpdateBulletsAndHits(activeBullets, activeEnemies, GameArea);
+         CombatManager.UpdateBulletsAndHits(activeBullets, activeEnemies, GameArea, roomManager.CurrentRoom.Width);
 
          // 3. ИНТЕРФЕЙС
          AmmoText.Text = currentWeapon.IsReloading ? "Перезарядка..." : $"{currentWeapon.Ammo} / {currentWeapon.ReserveAmmo}";
 
          // ---------------------------------------------------------
-         // 4. ЛОГИКА НАПАРНИКА: КОМНАТЫ И КАМЕРА
+         // 4. КОМНАТЫ И КАМЕРА
          // ---------------------------------------------------------
          Rect currentHitBox = new Rect(myHero.X, myHero.Y, myHero.Width, myHero.Height);
          var transition = roomManager.TryTransition(currentHitBox);
