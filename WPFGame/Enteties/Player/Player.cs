@@ -113,8 +113,7 @@ namespace WPFGame.PlayerLogic
             }
          }
 
-         // Сомнительная проверка. Проверить на необходимость. Идейно нужна при спуске и контакте с Ground
-         if (IsClimbing && OnGround && (goLeft || goRight))
+         if (IsClimbing && OnGround && (goLeft || goRight) && !goUp && !goDown)
          {
             IsClimbing = false;
          }
