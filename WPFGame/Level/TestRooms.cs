@@ -36,12 +36,6 @@ namespace WPFGame.Level
                 300,
                 20));
 
-            room.Tiles.Add(new TileData(
-                TileType.Ladder,
-                450,
-                RoomMetrics.FloorY - 250,
-                40,
-                250));
 
             room.Tiles.Add(new TileData(
                 TileType.SlopeUpRight,
@@ -57,12 +51,12 @@ namespace WPFGame.Level
                 100,
                 150));
 
-            // Лестница доходит до верхней границы комнаты
+            // Одна лестница соединяет пол с верхним проходом по центру блока
             room.Tiles.Add(new TileData(
                 TileType.Ladder,
-                460,
+                RoomLayoutRules.GetCenteredLadderX(0),
                 0,
-                40,
+                RoomLayoutRules.LadderWidth,
                 RoomMetrics.FloorY));
 
             room.AddDoor(
@@ -164,12 +158,12 @@ namespace WPFGame.Level
                 RoomMetrics.TopBottomDoorWidth,
                 20));
 
-            // Лестница соединяется с лестницей Room1 через общую границу
+            // Лестница совпадает с центральным проходом нижней комнаты
             room.Tiles.Add(new TileData(
                 TileType.Ladder,
-                460,
+                RoomLayoutRules.GetCenteredLadderX(0),
                 280,
-                40,
+                RoomLayoutRules.LadderWidth,
                 260));
 
             room.AddDoor(
@@ -204,9 +198,9 @@ namespace WPFGame.Level
 
             room.Tiles.Add(new TileData(
                 TileType.Ladder,
-                460,
+                RoomLayoutRules.GetCenteredLadderX(0),
                 0,
-                40,
+                RoomLayoutRules.LadderWidth,
                 floorY));
 
             room.Tiles.Add(new TileData(

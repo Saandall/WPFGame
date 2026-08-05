@@ -26,6 +26,9 @@ namespace WPFGame.Level
 
         public bool CurrentRoomChanged { get; private set; }
 
+        // После пересечения ждём, пока камера и игрок войдут в новую комнату
+        public bool IsCameraTransitionActive { get; private set; }
+
         public bool HasPendingRoom =>
             pendingRoom is not null;
 
@@ -102,13 +105,15 @@ namespace WPFGame.Level
                 {
                     SwapCurrentAndPendingRooms();
                     CurrentRoomChanged = true;
+                    IsCameraTransitionActive = true;
 
                     return new Point(
                         playerX,
                         playerY);
                 }
 
-                if (HasMovedAwayFromDoor(
+                if (!IsCameraTransitionActive &&
+                    HasMovedAwayFromDoor(
                         playerHitBox,
                         currentDoorToPending))
                 {
@@ -121,6 +126,33 @@ namespace WPFGame.Level
                 playerY,
                 playerWidth,
                 playerHeight);
+        }
+
+        // Выгружает предыдущую комнату, когда камера уже внутри новой
+        public void TryCompleteCameraTransition(
+            double playerX,
+            double playerY,
+            double playerWidth,
+            double playerHeight)
+        {
+            if (!IsCameraTransitionActive ||
+                currentDoorToPending is null)
+            {
+                return;
+            }
+
+            var playerHitBox = new Rect(
+                playerX,
+                playerY,
+                playerWidth,
+                playerHeight);
+
+            if (HasMovedAwayFromDoor(
+                    playerHitBox,
+                    currentDoorToPending))
+            {
+                RemovePendingRoom();
+            }
         }
 
         // Загружает соседа только после касания триггера конкретной двери
@@ -239,6 +271,7 @@ namespace WPFGame.Level
             pendingRoom = null;
             currentDoorToPending = null;
             pendingDoorToCurrent = null;
+            IsCameraTransitionActive = false;
         }
 
         private List<Rectangle> SpawnRoom(

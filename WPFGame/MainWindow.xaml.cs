@@ -167,14 +167,20 @@ namespace WPFGame
                     ? "Перезарядка..."
                     : $"{currentWeapon.Ammo} / {currentWeapon.ReserveAmmo}";
 
-            if (roomManager.CurrentRoomChanged)
+            if (roomManager.IsCameraTransitionActive)
             {
-                camera.SnapTo(
-                    myHero.X,
-                    myHero.Y,
-                    myHero.Width,
-                    myHero.Height,
-                    roomManager.CurrentBounds);
+                bool cameraEnteredRoom =
+                    camera.MoveIntoBounds(
+                        roomManager.CurrentBounds);
+
+                if (cameraEnteredRoom)
+                {
+                    roomManager.TryCompleteCameraTransition(
+                        myHero.X,
+                        myHero.Y,
+                        myHero.Width,
+                        myHero.Height);
+                }
             }
             else
             {
