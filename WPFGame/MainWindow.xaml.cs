@@ -145,6 +145,13 @@ namespace WPFGame
 
             foreach (var enemy in activeEnemies)
             {
+                // Физика работает только внутри загруженной области
+                if (!roomManager.ActiveBounds.IntersectsWith(
+                        enemy.HitBox))
+                {
+                    continue;
+                }
+
                 enemy.UpdatePhysics(
                     GameArea.Children,
                     0.8,
@@ -183,19 +190,29 @@ namespace WPFGame
                     ? "Перезарядка..."
                     : $"{currentWeapon.Ammo} / {currentWeapon.ReserveAmmo}";
 
-            if (roomManager.CurrentRoomChanged)
+            if (roomManager.IsCameraTransitionActive)
             {
-                // После полного перехода камера сразу переключается на новую комнату
-                camera.SnapTo(
-                    myHero.X,
-                    myHero.Y,
-                    myHero.Width,
-                    myHero.Height,
-                    roomManager.CurrentBounds);
+                // После полного перехода камера быстро переезжает в новую комнату
+                bool transitionCompleted =
+                    camera.MoveQuicklyToPlayer(
+                        myHero.X,
+                        myHero.Y,
+                        myHero.Width,
+                        myHero.Height,
+                        roomManager.CurrentBounds);
+
+                if (transitionCompleted)
+                {
+                    roomManager.CompleteCameraTransition(
+                        myHero.X,
+                        myHero.Y,
+                        myHero.Width,
+                        myHero.Height);
+                }
             }
             else
             {
-                // До перехода камера остаётся ограничена текущей комнатой
+                // Внутри комнаты действует обычная мёртвая зона
                 camera.Follow(
                     myHero.X,
                     myHero.Y,
