@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using WPFGame.Core;
@@ -52,6 +53,11 @@ namespace WPFGame
             GameArea.Children.Add(
                 myHero.VisualShape);
 
+            // Игрок отображается поверх обычных тайлов и лестниц
+            Panel.SetZIndex(
+                myHero.VisualShape,
+                ZLayer.Player);
+
             camera.SnapTo(
                 myHero.X,
                 myHero.Y,
@@ -75,6 +81,16 @@ namespace WPFGame
 
             GameArea.Children.Add(
                 dummy.VisualShape);
+
+            // Тестовый противник отображается поверх тайлов комнаты
+            Panel.SetZIndex(
+                dummy.VisualShape,
+                ZLayer.Enemies);
+
+            // Интерфейс остаётся поверх игрового мира
+            Panel.SetZIndex(
+                AmmoText,
+                ZLayer.Interface);
 
             gameTimer.Interval =
                 TimeSpan.FromMilliseconds(16);
@@ -167,29 +183,25 @@ namespace WPFGame
                     ? "Перезарядка..."
                     : $"{currentWeapon.Ammo} / {currentWeapon.ReserveAmmo}";
 
-            if (roomManager.IsCameraTransitionActive)
+            if (roomManager.CurrentRoomChanged)
             {
-                bool cameraEnteredRoom =
-                    camera.MoveIntoBounds(
-                        roomManager.CurrentBounds);
-
-                if (cameraEnteredRoom)
-                {
-                    roomManager.TryCompleteCameraTransition(
-                        myHero.X,
-                        myHero.Y,
-                        myHero.Width,
-                        myHero.Height);
-                }
+                // После полного перехода камера сразу переключается на новую комнату
+                camera.SnapTo(
+                    myHero.X,
+                    myHero.Y,
+                    myHero.Width,
+                    myHero.Height,
+                    roomManager.CurrentBounds);
             }
             else
             {
+                // До перехода камера остаётся ограничена текущей комнатой
                 camera.Follow(
                     myHero.X,
                     myHero.Y,
                     myHero.Width,
                     myHero.Height,
-                    roomManager.ActiveBounds);
+                    roomManager.CurrentBounds);
             }
 
             ApplyCamera();

@@ -1,6 +1,7 @@
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using WPFGame.Core;
 
 namespace WPFGame.Level
 {
@@ -43,8 +44,8 @@ namespace WPFGame.Level
                 tile.Type is
                     TileType.SlopeUpRight or
                     TileType.SlopeUpLeft
-                        ? 20
-                        : 0);
+                        ? ZLayer.Slopes
+                        : ZLayer.Tiles);
 
             Canvas.SetLeft(
                 rectangle,
