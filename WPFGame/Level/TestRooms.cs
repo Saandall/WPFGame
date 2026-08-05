@@ -1,96 +1,205 @@
 namespace WPFGame.Level
 {
-    // Заготовленные тестовые комнаты, пока нет генератора.
+    // Заготовленные тестовые комнаты, пока нет генератора
     public static class TestRooms
     {
-        private const double PlayerHeight = 50;
-        private const double FloorY = 460;      // пол прижат к низу комнаты (высота комнаты 540)
-        private const double FloorHeight = 80;
-        private const double DoorSize = 70;     // высота/ширина проёма — чуть больше роста игрока
-
         public static RoomTemplate Room1()
         {
-            var room = new RoomTemplate { Id = "room1", Width = 960, Height = 540, PlayerStartX = 100, PlayerStartY = FloorY - PlayerHeight };
+            var room = new RoomTemplate(
+                "room1",
+                new[] { (Col: 0, Row: 0) })
+            {
+                PlayerStartX = 100,
+                PlayerStartY =
+                    RoomMetrics.FloorY -
+                    RoomMetrics.DefaultPlayerHeight
+            };
 
-            room.Tiles.Add(new TileData(TileType.Ground, 0, FloorY, 960, FloorHeight));
+            room.Tiles.Add(new TileData(
+                TileType.Ground,
+                0,
+                RoomMetrics.FloorY,
+                RoomMetrics.CellWidth,
+                RoomMetrics.FloorHeight));
 
-            room.Tiles.Add(new TileData(TileType.Platform, 400, FloorY - 150, 300, 20));
-            room.Tiles.Add(new TileData(TileType.Platform, 400, FloorY - 250, 300, 20));
-            room.Tiles.Add(new TileData(TileType.Ladder, 450, FloorY - 250, 40, 250));
-            room.Tiles.Add(new TileData(TileType.SlopeUpRight, 222, FloorY - 150, 178, 150));
-            room.Tiles.Add(new TileData(TileType.SlopeUpLeft, 700, FloorY - 150, 100, 150));
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                400,
+                RoomMetrics.FloorY - 150,
+                300,
+                20));
 
-            // Лестница до потолка — путь наверх, в Room3 (сдвинута с 1000 на 850, чтобы влезть в 960 шириной)
-            room.Tiles.Add(new TileData(TileType.Ladder, 850, 0, 40, FloorY));
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                400,
+                RoomMetrics.FloorY - 250,
+                300,
+                20));
 
-            room.Doors[Direction.Right] = (FloorY - DoorSize, FloorY);
-            room.EntryPoints[Direction.Right] = (960 - DoorSize, FloorY - PlayerHeight);
+            room.Tiles.Add(new TileData(
+                TileType.Ladder,
+                450,
+                RoomMetrics.FloorY - 250,
+                40,
+                250));
 
-            room.Doors[Direction.Top] = (850 - 20, 850 + 40 + 20);
-            room.EntryPoints[Direction.Top] = (850, 20);
+            room.Tiles.Add(new TileData(
+                TileType.SlopeUpRight,
+                222,
+                RoomMetrics.FloorY - 150,
+                178,
+                150));
+
+            room.Tiles.Add(new TileData(
+                TileType.SlopeUpLeft,
+                700,
+                RoomMetrics.FloorY - 150,
+                100,
+                150));
+
+            // Путь к верхней двери расположен по центру блока
+            room.Tiles.Add(new TileData(
+                TileType.Ladder,
+                460,
+                0,
+                40,
+                RoomMetrics.FloorY));
+
+            room.AddDoor(Direction.Right, 0, 0);
+            room.AddDoor(Direction.Top, 0, 0);
 
             return room;
         }
 
-        // Большая комната — специально шире экрана (2400 против viewport 960), чтобы
-        // проверить, как камера следует за игроком и упирается в границы комнаты.
+        // Горизонтальная комната из двух блоков
         public static RoomTemplate Room2()
         {
-            var room = new RoomTemplate { Id = "room2", Width = 2400, Height = 540 };
+            var room = new RoomTemplate(
+                "room2",
+                new[]
+                {
+                    (Col: 0, Row: 0),
+                    (Col: 1, Row: 0)
+                });
 
-            room.Tiles.Add(new TileData(TileType.Ground, 0, FloorY, 2400, FloorHeight));
+            room.Tiles.Add(new TileData(
+                TileType.Ground,
+                0,
+                RoomMetrics.FloorY,
+                room.Width,
+                RoomMetrics.FloorHeight));
 
-            // Платформы просто как визуальные ориентиры, чтобы движение камеры было заметно
-            room.Tiles.Add(new TileData(TileType.Platform, 600, FloorY - 150, 150, 20));
-            room.Tiles.Add(new TileData(TileType.Platform, 1200, FloorY - 150, 150, 20));
-            room.Tiles.Add(new TileData(TileType.Platform, 1800, FloorY - 150, 150, 20));
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                600,
+                RoomMetrics.FloorY - 150,
+                150,
+                20));
 
-            room.Doors[Direction.Left] = (FloorY - DoorSize, FloorY);
-            room.EntryPoints[Direction.Left] = (DoorSize, FloorY - PlayerHeight);
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                1200,
+                RoomMetrics.FloorY - 150,
+                150,
+                20));
 
-            room.Doors[Direction.Right] = (FloorY - DoorSize, FloorY);
-            room.EntryPoints[Direction.Right] = (2400 - DoorSize, FloorY - PlayerHeight);
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                1650,
+                RoomMetrics.FloorY - 250,
+                150,
+                20));
+
+            room.AddDoor(Direction.Left, 0, 0);
+            room.AddDoor(Direction.Right, 1, 0);
 
             return room;
         }
 
-        // Комната, большая и по ширине, и по высоте — проверить упор камеры во все 4 края.
-        public static RoomTemplate Room4()
-        {
-            var room = new RoomTemplate { Id = "room4", Width = 1200, Height = 1600 };
-
-            const double tallFloorY = 1520; // своя высота пола — комната намного выше остальных
-
-            room.Tiles.Add(new TileData(TileType.Ground, 0, tallFloorY, 1200, 80));
-
-            // Лестница на всю высоту комнаты — для проверки вертикальной камеры
-            room.Tiles.Add(new TileData(TileType.Ladder, 580, 0, 40, tallFloorY));
-
-            // Платформы как визуальные ориентиры по пути наверх
-            room.Tiles.Add(new TileData(TileType.Platform, 750, 400, 150, 20));
-            room.Tiles.Add(new TileData(TileType.Platform, 300, 900, 150, 20));
-
-            room.Doors[Direction.Left] = (tallFloorY - DoorSize, tallFloorY);
-            room.EntryPoints[Direction.Left] = (DoorSize, tallFloorY - PlayerHeight);
-
-            return room;
-        }
-
-        // Комната сверху от Room1. Пол разорван провальной платформой посередине.
+        // Комната над Room1 с проходом в полу
         public static RoomTemplate Room3()
         {
-            var room = new RoomTemplate { Id = "room3", Width = 960, Height = 540 };
+            var room = new RoomTemplate(
+                "room3",
+                new[] { (Col: 0, Row: 0) });
 
-            const double gapStart = 390;
-            const double gapWidth = 180;
-            const double gapEnd = gapStart + gapWidth;
+            double gapStart =
+                RoomMetrics.TopBottomDoorStartX;
 
-            room.Tiles.Add(new TileData(TileType.Ground, 0, FloorY, gapStart, FloorHeight));
-            room.Tiles.Add(new TileData(TileType.Ground, gapEnd, FloorY, 960 - gapEnd, FloorHeight));
-            room.Tiles.Add(new TileData(TileType.Platform, gapStart, FloorY, gapWidth, 20));
+            double gapEnd =
+                RoomMetrics.TopBottomDoorEndX;
 
-            room.Doors[Direction.Bottom] = (gapStart, gapEnd);
-            room.EntryPoints[Direction.Bottom] = (60, FloorY - PlayerHeight);
+            room.Tiles.Add(new TileData(
+                TileType.Ground,
+                0,
+                RoomMetrics.FloorY,
+                gapStart,
+                RoomMetrics.FloorHeight));
+
+            room.Tiles.Add(new TileData(
+                TileType.Ground,
+                gapEnd,
+                RoomMetrics.FloorY,
+                RoomMetrics.CellWidth - gapEnd,
+                RoomMetrics.FloorHeight));
+
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                gapStart,
+                RoomMetrics.FloorY,
+                RoomMetrics.TopBottomDoorWidth,
+                20));
+
+            room.AddDoor(Direction.Bottom, 0, 0);
+
+            return room;
+        }
+
+        // Вертикальная комната из двух блоков
+        public static RoomTemplate Room4()
+        {
+            var room = new RoomTemplate(
+                "room4",
+                new[]
+                {
+                    (Col: 0, Row: 0),
+                    (Col: 0, Row: 1)
+                });
+
+            double floorY =
+                room.Height -
+                RoomMetrics.FloorHeight;
+
+            room.Tiles.Add(new TileData(
+                TileType.Ground,
+                0,
+                floorY,
+                room.Width,
+                RoomMetrics.FloorHeight));
+
+            room.Tiles.Add(new TileData(
+                TileType.Ladder,
+                460,
+                0,
+                40,
+                floorY));
+
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                650,
+                350,
+                170,
+                20));
+
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                200,
+                750,
+                170,
+                20));
+
+            // Вход расположен на левом краю нижнего блока
+            room.AddDoor(Direction.Left, 0, 1);
 
             return room;
         }
