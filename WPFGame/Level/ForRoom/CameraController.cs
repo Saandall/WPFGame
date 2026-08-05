@@ -1,9 +1,8 @@
-﻿using System;
+using System.Windows;
 
 namespace WPFGame.Level
 {
-    // Какая часть комнаты сейчас видна. Следует за игроком, только если он вышел
-    // за пределы "мёртвой зоны" в центре экрана, и не показывает то, что за границами комнаты.
+    // Следует за игроком и не выходит за мировые границы комнаты
     public class CameraController
     {
         private readonly double viewportWidth;
@@ -14,7 +13,11 @@ namespace WPFGame.Level
         public double X { get; private set; }
         public double Y { get; private set; }
 
-        public CameraController(double viewportWidth, double viewportHeight, double deadZoneWidth, double deadZoneHeight)
+        public CameraController(
+            double viewportWidth,
+            double viewportHeight,
+            double deadZoneWidth,
+            double deadZoneHeight)
         {
             this.viewportWidth = viewportWidth;
             this.viewportHeight = viewportHeight;
@@ -22,42 +25,103 @@ namespace WPFGame.Level
             this.deadZoneHeight = deadZoneHeight;
         }
 
-        // Двигает камеру, только если центр игрока вышел за мёртвую зону
-        public void Follow(double playerX, double playerY, double playerWidth, double playerHeight, double roomWidth, double roomHeight)
+        // Двигает камеру после выхода игрока из мёртвой зоны
+        public void Follow(
+            double playerX,
+            double playerY,
+            double playerWidth,
+            double playerHeight,
+            Rect worldBounds)
         {
-            double playerCenterX = playerX + playerWidth / 2;
-            double playerCenterY = playerY + playerHeight / 2;
+            double playerCenterX =
+                playerX + playerWidth / 2;
 
-            double viewCenterX = X + viewportWidth / 2;
-            double viewCenterY = Y + viewportHeight / 2;
+            double playerCenterY =
+                playerY + playerHeight / 2;
 
-            double left = viewCenterX - deadZoneWidth / 2;
-            double right = viewCenterX + deadZoneWidth / 2;
-            double top = viewCenterY - deadZoneHeight / 2;
-            double bottom = viewCenterY + deadZoneHeight / 2;
+            double viewCenterX =
+                X + viewportWidth / 2;
 
-            if (playerCenterX < left) X -= left - playerCenterX;
-            else if (playerCenterX > right) X += playerCenterX - right;
+            double viewCenterY =
+                Y + viewportHeight / 2;
 
-            if (playerCenterY < top) Y -= top - playerCenterY;
-            else if (playerCenterY > bottom) Y += playerCenterY - bottom;
+            double left =
+                viewCenterX - deadZoneWidth / 2;
 
-            Clamp(roomWidth, roomHeight);
+            double right =
+                viewCenterX + deadZoneWidth / 2;
+
+            double top =
+                viewCenterY - deadZoneHeight / 2;
+
+            double bottom =
+                viewCenterY + deadZoneHeight / 2;
+
+            if (playerCenterX < left)
+            {
+                X -= left - playerCenterX;
+            }
+            else if (playerCenterX > right)
+            {
+                X += playerCenterX - right;
+            }
+
+            if (playerCenterY < top)
+            {
+                Y -= top - playerCenterY;
+            }
+            else if (playerCenterY > bottom)
+            {
+                Y += playerCenterY - bottom;
+            }
+
+            Clamp(worldBounds);
         }
 
-        // Мгновенно центрирует камеру на игроке — используем сразу после смены комнаты
-        public void SnapTo(double playerX, double playerY, double playerWidth, double playerHeight, double roomWidth, double roomHeight)
+        // Мгновенно устанавливает камеру внутри заданных границ
+        public void SnapTo(
+            double playerX,
+            double playerY,
+            double playerWidth,
+            double playerHeight,
+            Rect worldBounds)
         {
-            X = playerX + playerWidth / 2 - viewportWidth / 2;
-            Y = playerY + playerHeight / 2 - viewportHeight / 2;
+            X =
+                playerX +
+                playerWidth / 2 -
+                viewportWidth / 2;
 
-            Clamp(roomWidth, roomHeight);
+            Y =
+                playerY +
+                playerHeight / 2 -
+                viewportHeight / 2;
+
+            Clamp(worldBounds);
         }
 
-        private void Clamp(double roomWidth, double roomHeight)
+        // Ограничивает положение камеры границами комнаты
+        private void Clamp(
+            Rect worldBounds)
         {
-            X = Math.Clamp(X, 0, Math.Max(0, roomWidth - viewportWidth));
-            Y = Math.Clamp(Y, 0, Math.Max(0, roomHeight - viewportHeight));
+            double maxX = Math.Max(
+                worldBounds.Left,
+                worldBounds.Right -
+                viewportWidth);
+
+            double maxY = Math.Max(
+                worldBounds.Top,
+                worldBounds.Bottom -
+                viewportHeight);
+
+            X = Math.Clamp(
+                X,
+                worldBounds.Left,
+                maxX);
+
+            Y = Math.Clamp(
+                Y,
+                worldBounds.Top,
+                maxY);
         }
     }
 }
