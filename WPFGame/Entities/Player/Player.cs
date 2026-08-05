@@ -103,12 +103,12 @@ namespace WPFGame.PlayerLogic
 
             if (goLeft)
             {
-                X -= 5;
+                X -= 15;
             }
 
             if (goRight)
             {
-                X += 5;
+                X += 15;
             }
 
             base.UpdatePhysics(

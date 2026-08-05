@@ -74,6 +74,8 @@ namespace WPFGame.Level
 
         // Обновляет переход и возвращает допустимую мировую позицию игрока
         public Point UpdatePlayer(
+            double previousPlayerX,
+            double previousPlayerY,
             double playerX,
             double playerY,
             double playerWidth,
@@ -103,9 +105,13 @@ namespace WPFGame.Level
                     SwapCurrentAndPendingRooms();
                     CurrentRoomChanged = true;
 
-                    return new Point(
+                    return ResolvePlayerInsideLoadedShape(
+                        previousPlayerX,
+                        previousPlayerY,
                         playerX,
-                        playerY);
+                        playerY,
+                        playerWidth,
+                        playerHeight);
                 }
 
                 if (HasMovedAwayFromDoor(
@@ -116,9 +122,18 @@ namespace WPFGame.Level
                 }
             }
 
-            return ClampPlayerToCurrentRoom(
-                playerX,
-                playerY,
+            Point clampedPosition =
+                ClampPlayerToCurrentRoom(
+                    playerX,
+                    playerY,
+                    playerWidth,
+                    playerHeight);
+
+            return ResolvePlayerInsideLoadedShape(
+                previousPlayerX,
+                previousPlayerY,
+                clampedPosition.X,
+                clampedPosition.Y,
                 playerWidth,
                 playerHeight);
         }
@@ -372,6 +387,145 @@ namespace WPFGame.Level
             return new Point(
                 playerX,
                 playerY);
+        }
+
+        // Не позволяет игроку входить в отсутствующие блоки комнаты
+        private Point ResolvePlayerInsideLoadedShape(
+            double previousPlayerX,
+            double previousPlayerY,
+            double playerX,
+            double playerY,
+            double playerWidth,
+            double playerHeight)
+        {
+            var candidate = new Rect(
+                playerX,
+                playerY,
+                playerWidth,
+                playerHeight);
+
+            if (IsHitBoxInsideLoadedShape(candidate))
+            {
+                return new Point(
+                    playerX,
+                    playerY);
+            }
+
+            // Сначала сохраняется горизонтальная часть движения
+            var horizontalOnly = new Rect(
+                playerX,
+                previousPlayerY,
+                playerWidth,
+                playerHeight);
+
+            if (IsHitBoxInsideLoadedShape(horizontalOnly))
+            {
+                return new Point(
+                    playerX,
+                    previousPlayerY);
+            }
+
+            // Затем сохраняется вертикальная часть движения
+            var verticalOnly = new Rect(
+                previousPlayerX,
+                playerY,
+                playerWidth,
+                playerHeight);
+
+            if (IsHitBoxInsideLoadedShape(verticalOnly))
+            {
+                return new Point(
+                    previousPlayerX,
+                    playerY);
+            }
+
+            return new Point(
+                previousPlayerX,
+                previousPlayerY);
+        }
+
+        // Проверяет четыре угла хитбокса в объединении загруженных блоков
+        private bool IsHitBoxInsideLoadedShape(
+            Rect hitBox)
+        {
+            const double inset = 0.1;
+
+            return IsPointInsideLoadedShape(
+                       hitBox.Left + inset,
+                       hitBox.Top + inset) &&
+                   IsPointInsideLoadedShape(
+                       hitBox.Right - inset,
+                       hitBox.Top + inset) &&
+                   IsPointInsideLoadedShape(
+                       hitBox.Left + inset,
+                       hitBox.Bottom - inset) &&
+                   IsPointInsideLoadedShape(
+                       hitBox.Right - inset,
+                       hitBox.Bottom - inset);
+        }
+
+        // Проверяет точку в текущей или временно загруженной комнате
+        private bool IsPointInsideLoadedShape(
+            double x,
+            double y)
+        {
+            if (IsPointInsideRoom(
+                    x,
+                    y,
+                    CurrentRoom,
+                    CurrentOriginX,
+                    CurrentOriginY))
+            {
+                return true;
+            }
+
+            return pendingRoom is not null &&
+                   IsPointInsideRoom(
+                       x,
+                       y,
+                       pendingRoom,
+                       pendingOriginX,
+                       pendingOriginY);
+        }
+
+        // Проверяет точку внутри одного из занятых блоков комнаты
+        private static bool IsPointInsideRoom(
+            double x,
+            double y,
+            RoomTemplate room,
+            double originX,
+            double originY)
+        {
+            foreach (var cell in room.OccupiedCells)
+            {
+                double left =
+                    originX +
+                    cell.Col *
+                    RoomMetrics.CellWidth;
+
+                double top =
+                    originY +
+                    cell.Row *
+                    RoomMetrics.CellHeight;
+
+                double right =
+                    left +
+                    RoomMetrics.CellWidth;
+
+                double bottom =
+                    top +
+                    RoomMetrics.CellHeight;
+
+                if (x >= left &&
+                    x <= right &&
+                    y >= top &&
+                    y <= bottom)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool IsInsideDoorTrigger(

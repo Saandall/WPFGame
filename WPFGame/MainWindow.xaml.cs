@@ -123,13 +123,22 @@ namespace WPFGame
             object? sender,
             EventArgs e)
         {
+            // Сохраняет последнюю допустимую позицию перед движением
+            double previousPlayerX =
+                myHero.X;
+
+            double previousPlayerY =
+                myHero.Y;
+
             // Игрок сначала двигается обычной физикой
             myHero.Update(
                 GameArea.Children);
 
-            // Менеджер комнат разрешает переход или возвращает игрока в границы
+            // Менеджер проверяет двери, границы и форму комнаты
             Point correctedPosition =
                 roomManager.UpdatePlayer(
+                    previousPlayerX,
+                    previousPlayerY,
                     myHero.X,
                     myHero.Y,
                     myHero.Width,
