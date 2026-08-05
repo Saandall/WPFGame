@@ -4,30 +4,132 @@ using System.Windows.Shapes;
 
 namespace WPFGame.Level
 {
-    // Управляет текущей комнатой и временным телепортационным переходом
+    // Загружает только текущую комнату и одну комнату у активной двери
     public class RoomManager
     {
         private readonly Canvas canvas;
-        private readonly List<Rectangle> spawnedTiles = new();
+
+        private List<Rectangle> currentTiles;
+        private List<Rectangle> pendingTiles = new();
+
+        private RoomTemplate? pendingRoom;
+        private DoorSlot? currentDoorToPending;
+        private DoorSlot? pendingDoorToCurrent;
+
+        private double pendingOriginX;
+        private double pendingOriginY;
 
         public RoomTemplate CurrentRoom { get; private set; }
+
+        public double CurrentOriginX { get; private set; }
+        public double CurrentOriginY { get; private set; }
+
+        public bool CurrentRoomChanged { get; private set; }
+
+        public bool HasPendingRoom =>
+            pendingRoom is not null;
+
+        public Rect CurrentBounds =>
+            new(
+                CurrentOriginX,
+                CurrentOriginY,
+                CurrentRoom.Width,
+                CurrentRoom.Height);
+
+        public Rect ActiveBounds
+        {
+            get
+            {
+                var bounds = CurrentBounds;
+
+                if (pendingRoom is not null)
+                {
+                    bounds.Union(
+                        new Rect(
+                            pendingOriginX,
+                            pendingOriginY,
+                            pendingRoom.Width,
+                            pendingRoom.Height));
+                }
+
+                return bounds;
+            }
+        }
 
         public RoomManager(
             Canvas canvas,
             RoomTemplate startRoom)
         {
             this.canvas = canvas;
+
             CurrentRoom = startRoom;
-            SpawnCurrentRoom();
+            CurrentOriginX = 0;
+            CurrentOriginY = 0;
+
+            currentTiles = SpawnRoom(
+                CurrentRoom,
+                CurrentOriginX,
+                CurrentOriginY);
         }
 
-        // Пока сохраняет старое поведение: заменяет комнату и возвращает новую позицию игрока
-        public (double X, double Y)?
-            TryTransition(Rect playerHitBox)
+        // Обновляет переход и возвращает допустимую мировую позицию игрока
+        public Point UpdatePlayer(
+            double playerX,
+            double playerY,
+            double playerWidth,
+            double playerHeight)
+        {
+            CurrentRoomChanged = false;
+
+            var playerHitBox = new Rect(
+                playerX,
+                playerY,
+                playerWidth,
+                playerHeight);
+
+            if (pendingRoom is null)
+            {
+                TryBeginTransition(
+                    playerHitBox);
+            }
+
+            if (pendingRoom is not null &&
+                currentDoorToPending is not null)
+            {
+                if (HasFullyCrossedDoor(
+                        playerHitBox,
+                        currentDoorToPending))
+                {
+                    SwapCurrentAndPendingRooms();
+                    CurrentRoomChanged = true;
+
+                    return new Point(
+                        playerX,
+                        playerY);
+                }
+
+                if (HasMovedAwayFromDoor(
+                        playerHitBox,
+                        currentDoorToPending))
+                {
+                    RemovePendingRoom();
+                }
+            }
+
+            return ClampPlayerToCurrentRoom(
+                playerX,
+                playerY,
+                playerWidth,
+                playerHeight);
+        }
+
+        // Загружает соседа только после касания триггера конкретной двери
+        private void TryBeginTransition(
+            Rect playerHitBox)
         {
             foreach (var door in CurrentRoom.Doors)
             {
-                if (!IsTouchingDoor(
+                if (!IsInsideDoorTrigger(
                         playerHitBox,
                         door))
                 {
@@ -43,92 +145,292 @@ namespace WPFGame.Level
                     continue;
                 }
 
-                return LoadRoom(
+                BeginTransition(
+                    door,
                     target.Value.Room,
-                    target.Value.Door,
-                    playerHitBox.Width,
-                    playerHitBox.Height);
-            }
+                    target.Value.Door);
 
-            return null;
+                return;
+            }
         }
 
-        private (double X, double Y) LoadRoom(
+        private void BeginTransition(
+            DoorSlot sourceDoor,
+            RoomTemplate targetRoom,
+            DoorSlot targetDoor)
+        {
+            if (targetDoor.Direction !=
+                sourceDoor.Direction.Opposite())
+            {
+                throw new InvalidOperationException(
+                    $"Двери {CurrentRoom.Id}/{sourceDoor.Id} и " +
+                    $"{targetRoom.Id}/{targetDoor.Id} направлены не навстречу друг другу.");
+            }
+
+            var targetOrigin =
+                CalculateTargetOrigin(
+                    sourceDoor,
+                    targetDoor);
+
+            pendingRoom = targetRoom;
+            pendingOriginX = targetOrigin.X;
+            pendingOriginY = targetOrigin.Y;
+
+            currentDoorToPending = sourceDoor;
+            pendingDoorToCurrent = targetDoor;
+
+            pendingTiles = SpawnRoom(
+                pendingRoom,
+                pendingOriginX,
+                pendingOriginY);
+        }
+
+        // После пересечения новая комната становится текущей без изменения координат игрока
+        private void SwapCurrentAndPendingRooms()
+        {
+            if (pendingRoom is null ||
+                currentDoorToPending is null ||
+                pendingDoorToCurrent is null)
+            {
+                return;
+            }
+
+            RoomTemplate oldCurrentRoom =
+                CurrentRoom;
+
+            double oldCurrentOriginX =
+                CurrentOriginX;
+
+            double oldCurrentOriginY =
+                CurrentOriginY;
+
+            List<Rectangle> oldCurrentTiles =
+                currentTiles;
+
+            DoorSlot oldCurrentDoor =
+                currentDoorToPending;
+
+            CurrentRoom = pendingRoom;
+            CurrentOriginX = pendingOriginX;
+            CurrentOriginY = pendingOriginY;
+            currentTiles = pendingTiles;
+
+            pendingRoom = oldCurrentRoom;
+            pendingOriginX = oldCurrentOriginX;
+            pendingOriginY = oldCurrentOriginY;
+            pendingTiles = oldCurrentTiles;
+
+            currentDoorToPending =
+                pendingDoorToCurrent;
+
+            pendingDoorToCurrent =
+                oldCurrentDoor;
+        }
+
+        // Удаляет только визуальные тайлы временной соседней комнаты
+        private void RemovePendingRoom()
+        {
+            foreach (var tile in pendingTiles)
+            {
+                canvas.Children.Remove(tile);
+            }
+
+            pendingTiles.Clear();
+            pendingRoom = null;
+            currentDoorToPending = null;
+            pendingDoorToCurrent = null;
+        }
+
+        private List<Rectangle> SpawnRoom(
             RoomTemplate room,
-            DoorSlot enteredDoor,
+            double originX,
+            double originY)
+        {
+            var spawnedTiles =
+                new List<Rectangle>();
+
+            foreach (var tile in room.Tiles)
+            {
+                var rectangle =
+                    RoomSpawner.CreateTile(
+                        tile,
+                        originX,
+                        originY);
+
+                canvas.Children.Add(
+                    rectangle);
+
+                spawnedTiles.Add(
+                    rectangle);
+            }
+
+            return spawnedTiles;
+        }
+
+        // Совмещает мировые позиции двух конкретных дверей
+        private Point CalculateTargetOrigin(
+            DoorSlot sourceDoor,
+            DoorSlot targetDoor)
+        {
+            double sourceBoundary =
+                GetDoorBoundary(
+                    sourceDoor,
+                    CurrentOriginX,
+                    CurrentOriginY);
+
+            double targetBoundary =
+                GetDoorBoundary(
+                    targetDoor,
+                    0,
+                    0);
+
+            var sourceRange =
+                GetDoorRange(
+                    sourceDoor,
+                    CurrentOriginX,
+                    CurrentOriginY);
+
+            var targetRange =
+                GetDoorRange(
+                    targetDoor,
+                    0,
+                    0);
+
+            if (sourceDoor.Direction is
+                Direction.Left or
+                Direction.Right)
+            {
+                return new Point(
+                    sourceBoundary -
+                    targetBoundary,
+
+                    sourceRange.Start -
+                    targetRange.Start);
+            }
+
+            return new Point(
+                sourceRange.Start -
+                targetRange.Start,
+
+                sourceBoundary -
+                targetBoundary);
+        }
+
+        private Point ClampPlayerToCurrentRoom(
+            double playerX,
+            double playerY,
             double playerWidth,
             double playerHeight)
         {
-            ClearCurrentRoom();
-            CurrentRoom = room;
-            SpawnCurrentRoom();
+            double minX =
+                CurrentBounds.Left;
 
-            return GetEntryPoint(
-                enteredDoor,
-                playerWidth,
-                playerHeight);
-        }
+            double maxX =
+                CurrentBounds.Right -
+                playerWidth;
 
-        private void SpawnCurrentRoom()
-        {
-            foreach (var tile in CurrentRoom.Tiles)
+            double minY =
+                CurrentBounds.Top;
+
+            double maxY =
+                CurrentBounds.Bottom -
+                playerHeight;
+
+            Direction? openDirection =
+                pendingRoom is not null
+                    ? currentDoorToPending?.Direction
+                    : null;
+
+            if (openDirection != Direction.Left)
             {
-                var rectangle =
-                    RoomSpawner.CreateTile(tile);
-
-                canvas.Children.Add(rectangle);
-                spawnedTiles.Add(rectangle);
-            }
-        }
-
-        private void ClearCurrentRoom()
-        {
-            foreach (var rectangle in spawnedTiles)
-            {
-                canvas.Children.Remove(rectangle);
+                playerX = Math.Max(
+                    playerX,
+                    minX);
             }
 
-            spawnedTiles.Clear();
+            if (openDirection != Direction.Right)
+            {
+                playerX = Math.Min(
+                    playerX,
+                    maxX);
+            }
+
+            if (openDirection != Direction.Top)
+            {
+                playerY = Math.Max(
+                    playerY,
+                    minY);
+            }
+
+            if (openDirection != Direction.Bottom)
+            {
+                playerY = Math.Min(
+                    playerY,
+                    maxY);
+            }
+
+            return new Point(
+                playerX,
+                playerY);
         }
 
-        // Проверяет пересечение игрока с линией конкретной двери
-        private static bool IsTouchingDoor(
+        private bool IsInsideDoorTrigger(
             Rect playerHitBox,
             DoorSlot door)
         {
-            var range = GetDoorRange(door);
             double boundary =
-                GetDoorBoundary(door);
+                GetDoorBoundary(
+                    door,
+                    CurrentOriginX,
+                    CurrentOriginY);
+
+            var range =
+                GetDoorRange(
+                    door,
+                    CurrentOriginX,
+                    CurrentOriginY);
 
             return door.Direction switch
             {
                 Direction.Left =>
-                    playerHitBox.Left <= boundary &&
-                    playerHitBox.Right >= boundary &&
+                    playerHitBox.Left <=
+                        boundary +
+                        RoomMetrics.DoorTriggerDepth &&
+                    playerHitBox.Right >=
+                        boundary &&
                     Overlaps(
                         playerHitBox.Top,
                         playerHitBox.Bottom,
                         range),
 
                 Direction.Right =>
-                    playerHitBox.Left <= boundary &&
-                    playerHitBox.Right >= boundary &&
+                    playerHitBox.Right >=
+                        boundary -
+                        RoomMetrics.DoorTriggerDepth &&
+                    playerHitBox.Left <=
+                        boundary &&
                     Overlaps(
                         playerHitBox.Top,
                         playerHitBox.Bottom,
                         range),
 
                 Direction.Top =>
-                    playerHitBox.Top <= boundary &&
-                    playerHitBox.Bottom >= boundary &&
+                    playerHitBox.Top <=
+                        boundary +
+                        RoomMetrics.DoorTriggerDepth &&
+                    playerHitBox.Bottom >=
+                        boundary &&
                     Overlaps(
                         playerHitBox.Left,
                         playerHitBox.Right,
                         range),
 
                 Direction.Bottom =>
-                    playerHitBox.Top <= boundary &&
-                    playerHitBox.Bottom >= boundary &&
+                    playerHitBox.Bottom >=
+                        boundary -
+                        RoomMetrics.DoorTriggerDepth &&
+                    playerHitBox.Top <=
+                        boundary &&
                     Overlaps(
                         playerHitBox.Left,
                         playerHitBox.Right,
@@ -138,124 +440,151 @@ namespace WPFGame.Level
             };
         }
 
-        // Вычисляет диапазон двери относительно её блока
-        private static (double Start, double End)
-            GetDoorRange(DoorSlot door)
+        private bool HasFullyCrossedDoor(
+            Rect playerHitBox,
+            DoorSlot door)
+        {
+            double boundary =
+                GetDoorBoundary(
+                    door,
+                    CurrentOriginX,
+                    CurrentOriginY);
+
+            return door.Direction switch
+            {
+                Direction.Left =>
+                    playerHitBox.Right <=
+                    boundary,
+
+                Direction.Right =>
+                    playerHitBox.Left >=
+                    boundary,
+
+                Direction.Top =>
+                    playerHitBox.Bottom <=
+                    boundary,
+
+                Direction.Bottom =>
+                    playerHitBox.Top >=
+                    boundary,
+
+                _ => false
+            };
+        }
+
+        // После отхода от двери предыдущая комната больше не нужна на Canvas
+        private bool HasMovedAwayFromDoor(
+            Rect playerHitBox,
+            DoorSlot door)
+        {
+            double boundary =
+                GetDoorBoundary(
+                    door,
+                    CurrentOriginX,
+                    CurrentOriginY);
+
+            return door.Direction switch
+            {
+                Direction.Left =>
+                    playerHitBox.Left >
+                    boundary +
+                    RoomMetrics.DoorTriggerDepth,
+
+                Direction.Right =>
+                    playerHitBox.Right <
+                    boundary -
+                    RoomMetrics.DoorTriggerDepth,
+
+                Direction.Top =>
+                    playerHitBox.Top >
+                    boundary +
+                    RoomMetrics.DoorTriggerDepth,
+
+                Direction.Bottom =>
+                    playerHitBox.Bottom <
+                    boundary -
+                    RoomMetrics.DoorTriggerDepth,
+
+                _ => false
+            };
+        }
+
+        private static double GetDoorBoundary(
+            DoorSlot door,
+            double originX,
+            double originY)
+        {
+            return door.Direction switch
+            {
+                Direction.Left =>
+                    originX +
+                    door.CellCol *
+                    RoomMetrics.CellWidth,
+
+                Direction.Right =>
+                    originX +
+                    (door.CellCol + 1) *
+                    RoomMetrics.CellWidth,
+
+                Direction.Top =>
+                    originY +
+                    door.CellRow *
+                    RoomMetrics.CellHeight,
+
+                Direction.Bottom =>
+                    originY +
+                    (door.CellRow + 1) *
+                    RoomMetrics.CellHeight,
+
+                _ =>
+                    throw new ArgumentOutOfRangeException(
+                        nameof(door.Direction))
+            };
+        }
+
+        private static (
+            double Start,
+            double End)
+            GetDoorRange(
+                DoorSlot door,
+                double originX,
+                double originY)
         {
             if (door.Direction is
-                Direction.Left or Direction.Right)
+                Direction.Left or
+                Direction.Right)
             {
-                double blockFloorY =
+                double floorY =
+                    originY +
                     door.CellRow *
                     RoomMetrics.CellHeight +
                     RoomMetrics.FloorY;
 
                 return (
-                    blockFloorY -
+                    floorY -
                     RoomMetrics.SideDoorHeight,
-                    blockFloorY);
+                    floorY);
             }
 
-            double start =
+            double startX =
+                originX +
                 door.CellCol *
                 RoomMetrics.CellWidth +
                 RoomMetrics.TopBottomDoorStartX;
 
             return (
-                start,
-                start +
+                startX,
+                startX +
                 RoomMetrics.TopBottomDoorWidth);
-        }
-
-        // Вычисляет координату внешней стороны выбранного блока
-        private static double GetDoorBoundary(
-            DoorSlot door)
-        {
-            return door.Direction switch
-            {
-                Direction.Left =>
-                    door.CellCol *
-                    RoomMetrics.CellWidth,
-
-                Direction.Right =>
-                    (door.CellCol + 1) *
-                    RoomMetrics.CellWidth,
-
-                Direction.Top =>
-                    door.CellRow *
-                    RoomMetrics.CellHeight,
-
-                Direction.Bottom =>
-                    (door.CellRow + 1) *
-                    RoomMetrics.CellHeight,
-
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(door.Direction))
-            };
-        }
-
-        // Временная точка появления, пока переход ещё не стал бесшовным
-        private static (double X, double Y)
-            GetEntryPoint(
-                DoorSlot door,
-                double playerWidth,
-                double playerHeight)
-        {
-            var range = GetDoorRange(door);
-            double boundary =
-                GetDoorBoundary(door);
-
-            double centeredX =
-                range.Start +
-                (range.End -
-                 range.Start -
-                 playerWidth) / 2;
-
-            double standingY =
-                range.End -
-                playerHeight;
-
-            return door.Direction switch
-            {
-                Direction.Left =>
-                    (
-                        boundary +
-                        RoomMetrics.DoorTriggerDepth,
-                        standingY
-                    ),
-
-                Direction.Right =>
-                    (
-                        boundary -
-                        RoomMetrics.DoorTriggerDepth -
-                        playerWidth,
-                        standingY
-                    ),
-
-                Direction.Top =>
-                    (
-                        centeredX,
-                        boundary +
-                        RoomMetrics.DoorTriggerDepth
-                    ),
-
-                Direction.Bottom =>
-                    (
-                        centeredX,
-                        boundary -
-                        RoomMetrics.DoorTriggerDepth -
-                        playerHeight
-                    ),
-
-                _ => throw new ArgumentOutOfRangeException(
-                    nameof(door.Direction))
-            };
         }
 
         private static bool Overlaps(
             double firstStart,
             double firstEnd,
-            (double Start, double End) second)
+            (
+                double Start,
+                double End
+            ) second)
         {
             return firstEnd >= second.Start &&
                    firstStart <= second.End;
