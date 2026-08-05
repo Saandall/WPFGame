@@ -222,6 +222,69 @@ namespace WPFGame.Level
                 0,
                 1);
 
+            room.AddDoor(
+                Direction.Right,
+                0,
+                1);
+
+            return room;
+        }
+
+        // Прямоугольная комната размером два на два блока
+        public static RoomTemplate Room5()
+        {
+            var room = RoomBuilder.Build(
+                "room5",
+                new[]
+                {
+                    (Col: 0, Row: 0),
+                    (Col: 1, Row: 0),
+                    (Col: 0, Row: 1),
+                    (Col: 1, Row: 1)
+                },
+                new[]
+                {
+                    (
+                        Direction: Direction.Left,
+                        CellCol: 0,
+                        CellRow: 1
+                    )
+                });
+
+            double floorY =
+                room.Height -
+                RoomMetrics.FloorHeight;
+
+            // Лестница позволяет проверить вертикальное движение камеры
+            room.Tiles.Add(new TileData(
+                TileType.Ladder,
+                RoomLayoutRules.GetCenteredLadderX(0),
+                0,
+                RoomLayoutRules.LadderWidth,
+                floorY));
+
+            // Платформы обозначают содержимое верхних и нижних блоков
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                180,
+                350,
+                260,
+                20));
+
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                1220,
+                350,
+                260,
+                20));
+
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                1250,
+                800,
+                260,
+                20));
+
             return room;
         }
     }
