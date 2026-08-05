@@ -106,6 +106,9 @@ namespace WPFGame.Level
                     SwapCurrentAndPendingRooms();
                     CurrentRoomChanged = true;
 
+                    // Запускает быстрое движение камеры в новую комнату
+                    IsCameraTransitionActive = true;
+
                     return new Point(
                         playerX,
                         playerY);
