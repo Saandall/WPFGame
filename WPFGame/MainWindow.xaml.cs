@@ -33,9 +33,14 @@ namespace WPFGame
         {
             InitializeComponent();
 
-            roomManager = new RoomManager(
-                GameArea,
-                TestLevel.StartRoom);
+            // Создаёт готовую структуру уровня до запуска игрового цикла
+            LevelLayout level =
+                FixedLevelFactory.Create();
+
+            roomManager =
+                new RoomManager(
+                    GameArea,
+                    level);
 
             camera = new CameraController(
                 viewportWidth: 960,
