@@ -9,7 +9,6 @@ namespace WPFGame.Level
         private readonly double viewportHeight;
         private readonly double deadZoneWidth;
         private readonly double deadZoneHeight;
-        private readonly double transitionSpeed;
 
         public double X { get; private set; }
         public double Y { get; private set; }
@@ -18,14 +17,12 @@ namespace WPFGame.Level
             double viewportWidth,
             double viewportHeight,
             double deadZoneWidth,
-            double deadZoneHeight,
-            double transitionSpeed = 80)
+            double deadZoneHeight)
         {
             this.viewportWidth = viewportWidth;
             this.viewportHeight = viewportHeight;
             this.deadZoneWidth = deadZoneWidth;
             this.deadZoneHeight = deadZoneHeight;
-            this.transitionSpeed = transitionSpeed;
         }
 
         // Двигает камеру после выхода игрока из мёртвой зоны
@@ -81,37 +78,7 @@ namespace WPFGame.Level
             Clamp(worldBounds);
         }
 
-        // Быстро перемещает камеру к игроку после перехода
-        public bool MoveQuicklyToPlayer(
-            double playerX,
-            double playerY,
-            double playerWidth,
-            double playerHeight,
-            Rect worldBounds)
-        {
-            Point target =
-                GetCenteredPosition(
-                    playerX,
-                    playerY,
-                    playerWidth,
-                    playerHeight,
-                    worldBounds);
-
-            X = MoveTowards(
-                X,
-                target.X,
-                transitionSpeed);
-
-            Y = MoveTowards(
-                Y,
-                target.Y,
-                transitionSpeed);
-
-            return Math.Abs(X - target.X) < 0.01 &&
-                   Math.Abs(Y - target.Y) < 0.01;
-        }
-
-        // Устанавливает начальное положение камеры
+        // Мгновенно устанавливает камеру внутри заданных границ
         public void SnapTo(
             double playerX,
             double playerY,
@@ -119,72 +86,17 @@ namespace WPFGame.Level
             double playerHeight,
             Rect worldBounds)
         {
-            Point target =
-                GetCenteredPosition(
-                    playerX,
-                    playerY,
-                    playerWidth,
-                    playerHeight,
-                    worldBounds);
-
-            X = target.X;
-            Y = target.Y;
-        }
-
-        // Рассчитывает положение камеры с учётом границ комнаты
-        private Point GetCenteredPosition(
-            double playerX,
-            double playerY,
-            double playerWidth,
-            double playerHeight,
-            Rect worldBounds)
-        {
-            double targetX =
+            X =
                 playerX +
                 playerWidth / 2 -
                 viewportWidth / 2;
 
-            double targetY =
+            Y =
                 playerY +
                 playerHeight / 2 -
                 viewportHeight / 2;
 
-            double maxX = Math.Max(
-                worldBounds.Left,
-                worldBounds.Right -
-                viewportWidth);
-
-            double maxY = Math.Max(
-                worldBounds.Top,
-                worldBounds.Bottom -
-                viewportHeight);
-
-            return new Point(
-                Math.Clamp(
-                    targetX,
-                    worldBounds.Left,
-                    maxX),
-
-                Math.Clamp(
-                    targetY,
-                    worldBounds.Top,
-                    maxY));
-        }
-
-        // Приближает значение к цели с ограниченной скоростью
-        private static double MoveTowards(
-            double current,
-            double target,
-            double maxDelta)
-        {
-            if (Math.Abs(target - current) <= maxDelta)
-            {
-                return target;
-            }
-
-            return current +
-                   Math.Sign(target - current) *
-                   maxDelta;
+            Clamp(worldBounds);
         }
 
         // Ограничивает положение камеры границами комнаты
