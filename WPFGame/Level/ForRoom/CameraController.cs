@@ -9,7 +9,6 @@ namespace WPFGame.Level
         private readonly double viewportHeight;
         private readonly double deadZoneWidth;
         private readonly double deadZoneHeight;
-        private readonly double transitionSpeed;
 
         public double X { get; private set; }
         public double Y { get; private set; }
@@ -18,17 +17,15 @@ namespace WPFGame.Level
             double viewportWidth,
             double viewportHeight,
             double deadZoneWidth,
-            double deadZoneHeight,
-            double transitionSpeed = 60)
+            double deadZoneHeight)
         {
             this.viewportWidth = viewportWidth;
             this.viewportHeight = viewportHeight;
             this.deadZoneWidth = deadZoneWidth;
             this.deadZoneHeight = deadZoneHeight;
-            this.transitionSpeed = transitionSpeed;
         }
 
-        // Двигает камеру, когда центр игрока покидает мёртвую зону
+        // Двигает камеру после выхода игрока из мёртвой зоны
         public void Follow(
             double playerX,
             double playerY,
@@ -81,45 +78,7 @@ namespace WPFGame.Level
             Clamp(worldBounds);
         }
 
-        // Быстро, но плавно вводит камеру в границы новой комнаты
-        public bool MoveIntoBounds(
-            Rect worldBounds)
-        {
-            double maxX = Math.Max(
-                worldBounds.Left,
-                worldBounds.Right -
-                viewportWidth);
-
-            double maxY = Math.Max(
-                worldBounds.Top,
-                worldBounds.Bottom -
-                viewportHeight);
-
-            double targetX = Math.Clamp(
-                X,
-                worldBounds.Left,
-                maxX);
-
-            double targetY = Math.Clamp(
-                Y,
-                worldBounds.Top,
-                maxY);
-
-            X = MoveTowards(
-                X,
-                targetX,
-                transitionSpeed);
-
-            Y = MoveTowards(
-                Y,
-                targetY,
-                transitionSpeed);
-
-            return Math.Abs(X - targetX) < 0.01 &&
-                   Math.Abs(Y - targetY) < 0.01;
-        }
-
-        // Используется только для начального положения камеры
+        // Мгновенно устанавливает камеру внутри заданных границ
         public void SnapTo(
             double playerX,
             double playerY,
@@ -140,21 +99,7 @@ namespace WPFGame.Level
             Clamp(worldBounds);
         }
 
-        private static double MoveTowards(
-            double current,
-            double target,
-            double maxDelta)
-        {
-            if (Math.Abs(target - current) <= maxDelta)
-            {
-                return target;
-            }
-
-            return current +
-                   Math.Sign(target - current) *
-                   maxDelta;
-        }
-
+        // Ограничивает положение камеры границами комнаты
         private void Clamp(
             Rect worldBounds)
         {
