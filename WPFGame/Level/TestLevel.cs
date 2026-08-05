@@ -16,12 +16,14 @@ namespace WPFGame.Level
             var room3 = TestRooms.Room3();
             var room4 = TestRooms.Room4();
             var room5 = TestRooms.Room5();
+            var room6 = TestRooms.Room6();
 
             rooms[room1.Id] = room1;
             rooms[room2.Id] = room2;
             rooms[room3.Id] = room3;
             rooms[room4.Id] = room4;
             rooms[room5.Id] = room5;
+            rooms[room6.Id] = room6;
 
             Connect(
                 room1,
@@ -45,6 +47,12 @@ namespace WPFGame.Level
                 room4,
                 "right_0_1",
                 room5,
+                "left_0_1");
+
+            Connect(
+                room5,
+                "right_1_1",
+                room6,
                 "left_0_1");
         }
 

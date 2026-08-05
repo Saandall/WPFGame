@@ -248,6 +248,11 @@ namespace WPFGame.Level
                         Direction: Direction.Left,
                         CellCol: 0,
                         CellRow: 1
+                    ),
+                    (
+                        Direction: Direction.Right,
+                        CellCol: 1,
+                        CellRow: 1
                     )
                 });
 
@@ -282,6 +287,49 @@ namespace WPFGame.Level
                 TileType.Platform,
                 1250,
                 800,
+                260,
+                20));
+
+            return room;
+        }
+
+        // Г-образная комната из трёх блоков
+        public static RoomTemplate Room6()
+        {
+            var room = RoomBuilder.Build(
+                "room6",
+                new[]
+                {
+                    (Col: 0, Row: 0),
+                    (Col: 1, Row: 0),
+                    (Col: 0, Row: 1)
+                },
+                new[]
+                {
+                    (
+                        Direction: Direction.Left,
+                        CellCol: 0,
+                        CellRow: 1
+                    )
+                });
+
+            double lowerFloorY =
+                room.Height -
+                RoomMetrics.FloorHeight;
+
+            // Лестница соединяет нижний левый блок с верхним рядом
+            room.Tiles.Add(new TileData(
+                TileType.Ladder,
+                RoomLayoutRules.GetCenteredLadderX(0),
+                0,
+                RoomLayoutRules.LadderWidth,
+                lowerFloorY));
+
+            // Платформа обозначает верхний правый блок
+            room.Tiles.Add(new TileData(
+                TileType.Platform,
+                RoomMetrics.CellWidth + 220,
+                300,
                 260,
                 20));
 
