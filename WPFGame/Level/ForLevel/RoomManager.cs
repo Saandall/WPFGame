@@ -1,14 +1,10 @@
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Shapes;
 
 namespace WPFGame.Level
 {
-    // Отвечает за то, какая комната сейчас на Canvas, и за переход в соседнюю
-    // комнату, когда игрок касается края текущей со стороны, где есть дверь.
-    // Ничего не знает про физику игрока (гравитация, лестницы) — только про то,
-    // где начинается и заканчивается комната.
+    // Управляет текущей комнатой и временным телепортационным переходом
     public class RoomManager
     {
         private readonly Canvas canvas;
@@ -16,77 +12,253 @@ namespace WPFGame.Level
 
         public RoomTemplate CurrentRoom { get; private set; }
 
-        public RoomManager(Canvas canvas, RoomTemplate startRoom)
+        public RoomManager(
+            Canvas canvas,
+            RoomTemplate startRoom)
         {
             this.canvas = canvas;
             CurrentRoom = startRoom;
             SpawnCurrentRoom();
         }
 
-        // Вызывается каждый кадр из GameTick с актуальным хитбоксом игрока.
-        // Возвращает новую позицию игрока, ЕСЛИ произошёл переход, иначе null.
-        public (double X, double Y)? TryTransition(Rect playerHitBox)
+        // Пока сохраняет старое поведение: заменяет комнату и возвращает новую позицию игрока
+        public (double X, double Y)?
+            TryTransition(Rect playerHitBox)
         {
-            foreach (var direction in CurrentRoom.Doors.Keys)
+            foreach (var door in CurrentRoom.Doors)
             {
-                if (!IsTouchingDoor(playerHitBox, direction)) continue;
+                if (!IsTouchingDoor(
+                        playerHitBox,
+                        door))
+                {
+                    continue;
+                }
 
-                var nextRoom = TestLevel.GetNextRoom(CurrentRoom.Id, direction);
-                if (nextRoom is null) continue; // дверь есть, а соседняя комната пока не задана
+                var target = TestLevel.GetNextRoom(
+                    CurrentRoom.Id,
+                    door.Id);
 
-                return LoadRoom(nextRoom, direction.Opposite());
+                if (target is null)
+                {
+                    continue;
+                }
+
+                return LoadRoom(
+                    target.Value.Room,
+                    target.Value.Door,
+                    playerHitBox.Width,
+                    playerHitBox.Height);
             }
 
             return null;
         }
 
-        private (double X, double Y) LoadRoom(RoomTemplate room, Direction enteredFrom)
+        private (double X, double Y) LoadRoom(
+            RoomTemplate room,
+            DoorSlot enteredDoor,
+            double playerWidth,
+            double playerHeight)
         {
             ClearCurrentRoom();
             CurrentRoom = room;
             SpawnCurrentRoom();
 
-            return room.EntryPoints.TryGetValue(enteredFrom, out var point)
-                ? point
-                : (room.PlayerStartX, room.PlayerStartY); // на случай, если точка входа не задана
+            return GetEntryPoint(
+                enteredDoor,
+                playerWidth,
+                playerHeight);
         }
 
         private void SpawnCurrentRoom()
         {
             foreach (var tile in CurrentRoom.Tiles)
             {
-                var rect = RoomSpawner.CreateTile(tile);
-                canvas.Children.Add(rect);
-                spawnedTiles.Add(rect); // запоминаем — это наши, их и будем убирать
+                var rectangle =
+                    RoomSpawner.CreateTile(tile);
+
+                canvas.Children.Add(rectangle);
+                spawnedTiles.Add(rectangle);
             }
         }
 
         private void ClearCurrentRoom()
         {
-            foreach (var rect in spawnedTiles)
+            foreach (var rectangle in spawnedTiles)
             {
-                canvas.Children.Remove(rect);
+                canvas.Children.Remove(rectangle);
             }
 
             spawnedTiles.Clear();
         }
 
-        // Касание края комнаты + попадание в диапазон конкретной двери (не вся стена)
-        private bool IsTouchingDoor(Rect playerHitBox, Direction direction)
+        // Проверяет пересечение игрока с линией конкретной двери
+        private static bool IsTouchingDoor(
+            Rect playerHitBox,
+            DoorSlot door)
         {
-            if (!CurrentRoom.Doors.TryGetValue(direction, out var zone)) return false;
+            var range = GetDoorRange(door);
+            double boundary =
+                GetDoorBoundary(door);
 
-            return direction switch
+            return door.Direction switch
             {
-                Direction.Left => playerHitBox.Left <= 0 && Overlaps(playerHitBox.Top, playerHitBox.Bottom, zone),
-                Direction.Right => playerHitBox.Right >= CurrentRoom.Width && Overlaps(playerHitBox.Top, playerHitBox.Bottom, zone),
-                Direction.Top => playerHitBox.Top <= 0 && Overlaps(playerHitBox.Left, playerHitBox.Right, zone),
-                Direction.Bottom => playerHitBox.Bottom >= CurrentRoom.Height && Overlaps(playerHitBox.Left, playerHitBox.Right, zone),
+                Direction.Left =>
+                    playerHitBox.Left <= boundary &&
+                    playerHitBox.Right >= boundary &&
+                    Overlaps(
+                        playerHitBox.Top,
+                        playerHitBox.Bottom,
+                        range),
+
+                Direction.Right =>
+                    playerHitBox.Left <= boundary &&
+                    playerHitBox.Right >= boundary &&
+                    Overlaps(
+                        playerHitBox.Top,
+                        playerHitBox.Bottom,
+                        range),
+
+                Direction.Top =>
+                    playerHitBox.Top <= boundary &&
+                    playerHitBox.Bottom >= boundary &&
+                    Overlaps(
+                        playerHitBox.Left,
+                        playerHitBox.Right,
+                        range),
+
+                Direction.Bottom =>
+                    playerHitBox.Top <= boundary &&
+                    playerHitBox.Bottom >= boundary &&
+                    Overlaps(
+                        playerHitBox.Left,
+                        playerHitBox.Right,
+                        range),
+
                 _ => false
             };
         }
 
-        // Пересекается ли отрезок [a,b] (край хитбокса игрока) с диапазоном двери
-        private static bool Overlaps(double a, double b, (double Start, double End) zone) => b >= zone.Start && a <= zone.End;
+        // Вычисляет диапазон двери относительно её блока
+        private static (double Start, double End)
+            GetDoorRange(DoorSlot door)
+        {
+            if (door.Direction is
+                Direction.Left or Direction.Right)
+            {
+                double blockFloorY =
+                    door.CellRow *
+                    RoomMetrics.CellHeight +
+                    RoomMetrics.FloorY;
+
+                return (
+                    blockFloorY -
+                    RoomMetrics.SideDoorHeight,
+                    blockFloorY);
+            }
+
+            double start =
+                door.CellCol *
+                RoomMetrics.CellWidth +
+                RoomMetrics.TopBottomDoorStartX;
+
+            return (
+                start,
+                start +
+                RoomMetrics.TopBottomDoorWidth);
+        }
+
+        // Вычисляет координату внешней стороны выбранного блока
+        private static double GetDoorBoundary(
+            DoorSlot door)
+        {
+            return door.Direction switch
+            {
+                Direction.Left =>
+                    door.CellCol *
+                    RoomMetrics.CellWidth,
+
+                Direction.Right =>
+                    (door.CellCol + 1) *
+                    RoomMetrics.CellWidth,
+
+                Direction.Top =>
+                    door.CellRow *
+                    RoomMetrics.CellHeight,
+
+                Direction.Bottom =>
+                    (door.CellRow + 1) *
+                    RoomMetrics.CellHeight,
+
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(door.Direction))
+            };
+        }
+
+        // Временная точка появления, пока переход ещё не стал бесшовным
+        private static (double X, double Y)
+            GetEntryPoint(
+                DoorSlot door,
+                double playerWidth,
+                double playerHeight)
+        {
+            var range = GetDoorRange(door);
+            double boundary =
+                GetDoorBoundary(door);
+
+            double centeredX =
+                range.Start +
+                (range.End -
+                 range.Start -
+                 playerWidth) / 2;
+
+            double standingY =
+                range.End -
+                playerHeight;
+
+            return door.Direction switch
+            {
+                Direction.Left =>
+                    (
+                        boundary +
+                        RoomMetrics.DoorTriggerDepth,
+                        standingY
+                    ),
+
+                Direction.Right =>
+                    (
+                        boundary -
+                        RoomMetrics.DoorTriggerDepth -
+                        playerWidth,
+                        standingY
+                    ),
+
+                Direction.Top =>
+                    (
+                        centeredX,
+                        boundary +
+                        RoomMetrics.DoorTriggerDepth
+                    ),
+
+                Direction.Bottom =>
+                    (
+                        centeredX,
+                        boundary -
+                        RoomMetrics.DoorTriggerDepth -
+                        playerHeight
+                    ),
+
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(door.Direction))
+            };
+        }
+
+        private static bool Overlaps(
+            double firstStart,
+            double firstEnd,
+            (double Start, double End) second)
+        {
+            return firstEnd >= second.Start &&
+                   firstStart <= second.End;
+        }
     }
 }

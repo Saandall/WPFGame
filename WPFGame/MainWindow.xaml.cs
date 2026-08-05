@@ -146,13 +146,13 @@ namespace WPFGame
    {
       private DispatcherTimer gameTimer = new DispatcherTimer();
 
-      // Ваши сущности
+      // Сущности
       private Player myHero;
       private Weapon currentWeapon;
       private List<Bullet> activeBullets = new List<Bullet>();
       private List<Enemy> activeEnemies = new List<Enemy>();
 
-      // Фичи напарника
+      // Для комнат/уровней
       private RoomManager roomManager;
       private CameraController camera;
 
