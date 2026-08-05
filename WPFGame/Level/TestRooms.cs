@@ -57,7 +57,7 @@ namespace WPFGame.Level
                 100,
                 150));
 
-            // Путь к верхней двери расположен по центру блока
+            // Лестница доходит до верхней границы комнаты
             room.Tiles.Add(new TileData(
                 TileType.Ladder,
                 460,
@@ -65,8 +65,15 @@ namespace WPFGame.Level
                 40,
                 RoomMetrics.FloorY));
 
-            room.AddDoor(Direction.Right, 0, 0);
-            room.AddDoor(Direction.Top, 0, 0);
+            room.AddDoor(
+                Direction.Right,
+                0,
+                0);
+
+            room.AddDoor(
+                Direction.Top,
+                0,
+                0);
 
             return room;
         }
@@ -110,13 +117,20 @@ namespace WPFGame.Level
                 150,
                 20));
 
-            room.AddDoor(Direction.Left, 0, 0);
-            room.AddDoor(Direction.Right, 1, 0);
+            room.AddDoor(
+                Direction.Left,
+                0,
+                0);
+
+            room.AddDoor(
+                Direction.Right,
+                1,
+                0);
 
             return room;
         }
 
-        // Комната над Room1 с проходом в полу
+        // Комната над Room1 с нижней дверью и продолжением лестницы
         public static RoomTemplate Room3()
         {
             var room = new RoomTemplate(
@@ -150,7 +164,18 @@ namespace WPFGame.Level
                 RoomMetrics.TopBottomDoorWidth,
                 20));
 
-            room.AddDoor(Direction.Bottom, 0, 0);
+            // Лестница соединяется с лестницей Room1 через общую границу
+            room.Tiles.Add(new TileData(
+                TileType.Ladder,
+                460,
+                280,
+                40,
+                260));
+
+            room.AddDoor(
+                Direction.Bottom,
+                0,
+                0);
 
             return room;
         }
@@ -198,8 +223,10 @@ namespace WPFGame.Level
                 170,
                 20));
 
-            // Вход расположен на левом краю нижнего блока
-            room.AddDoor(Direction.Left, 0, 1);
+            room.AddDoor(
+                Direction.Left,
+                0,
+                1);
 
             return room;
         }
