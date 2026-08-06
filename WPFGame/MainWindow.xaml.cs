@@ -29,13 +29,28 @@ namespace WPFGame
         private RoomManager roomManager;
         private CameraController camera;
 
+        // Позволяет быстро вернуться к стабильному ручному уровню
+        private const bool UseGeneratedLevel =
+            true;
+
+        // Одинаковый seed создаёт одинаковую последовательность выбора
+        private const int GeneratedLevelSeed =
+            20260805;
+
+        private const int GeneratedRoomCount =
+            8;
+
         public MainWindow()
         {
             InitializeComponent();
 
-            // Создаёт готовую структуру уровня до запуска игрового цикла
+            // Выбирает процедурный или стабильный ручной уровень
             LevelLayout level =
-                FixedLevelFactory.Create();
+                UseGeneratedLevel
+                    ? LevelGenerator.Generate(
+                        GeneratedLevelSeed,
+                        GeneratedRoomCount)
+                    : FixedLevelFactory.Create();
 
             roomManager =
                 new RoomManager(
