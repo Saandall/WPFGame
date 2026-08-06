@@ -33,8 +33,12 @@ namespace WPFGame
         private const bool UseGeneratedLevel =
             true;
 
-        // Одинаковый seed создаёт одинаковую последовательность выбора
-        private const int GeneratedLevelSeed =
+        // Новый seed меняет расположение комнат при каждом запуске
+        private const bool UseRandomGeneratedSeed =
+            true;
+
+        // Фиксированный seed позволяет повторить найденную ошибку
+        private const int FixedGeneratedLevelSeed =
             20260805;
 
         private const int GeneratedRoomCount =
@@ -44,13 +48,29 @@ namespace WPFGame
         {
             InitializeComponent();
 
+            // Выбирает случайный или фиксированный seed генератора
+            int generatedSeed =
+                UseRandomGeneratedSeed
+                    ? Random.Shared.Next()
+                    : FixedGeneratedLevelSeed;
+
             // Выбирает процедурный или стабильный ручной уровень
             LevelLayout level =
                 UseGeneratedLevel
                     ? LevelGenerator.Generate(
-                        GeneratedLevelSeed,
+                        generatedSeed,
                         GeneratedRoomCount)
                     : FixedLevelFactory.Create();
+
+            if (UseGeneratedLevel)
+            {
+                // Seed выводится для повторного запуска того же уровня
+                Title =
+                    $"WPFGame — seed {generatedSeed}";
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"Generated level seed: {generatedSeed}");
+            }
 
             roomManager =
                 new RoomManager(
