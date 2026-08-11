@@ -28,19 +28,7 @@ namespace WPFGame
         private Weapon currentWeapon;
         private RoomManager roomManager;
         private CameraController camera;
-        private DebugMiniMap debugMiniMap;
-
-        // Позволяет быстро вернуться к стабильному ручному уровню
-        private const bool UseGeneratedLevel =
-            true;
-
-        // Новый seed меняет расположение комнат при каждом запуске
-        private const bool UseRandomGeneratedSeed =
-            true;
-
-        // Фиксированный seed позволяет повторить найденную ошибку
-        private const int FixedGeneratedLevelSeed =
-            20260805;
+        private MiniMap miniMap;
 
         private const int GeneratedRoomCount =
             8;
@@ -49,38 +37,22 @@ namespace WPFGame
         {
             InitializeComponent();
 
-            // Выбирает случайный или фиксированный seed генератора
-            int generatedSeed =
-                UseRandomGeneratedSeed
-                    ? Random.Shared.Next()
-                    : FixedGeneratedLevelSeed;
+            int levelSeed =
+                Random.Shared.Next();
 
-            // Выбирает процедурный или стабильный ручной уровень
             LevelLayout level =
-                UseGeneratedLevel
-                    ? LevelGenerator.Generate(
-                        generatedSeed,
-                        GeneratedRoomCount)
-                    : FixedLevelFactory.Create();
-
-            if (UseGeneratedLevel)
-            {
-                // Seed выводится для повторного запуска того же уровня
-                Title =
-                    $"WPFGame — seed {generatedSeed}";
-
-                System.Diagnostics.Debug.WriteLine(
-                    $"Generated level seed: {generatedSeed}");
-            }
+                LevelGenerator.Generate(
+                    levelSeed,
+                    GeneratedRoomCount);
 
             roomManager =
                 new RoomManager(
                     GameArea,
                     level);
 
-            // Миникарта использует готовый LevelLayout и не зависит от камеры
-            debugMiniMap =
-                new DebugMiniMap(
+            // Миникарта отображает готовый LevelLayout и не зависит от камеры
+            miniMap =
+                new MiniMap(
                     Viewport,
                     level);
 
@@ -112,7 +84,7 @@ namespace WPFGame
                 myHero.Height,
                 roomManager.CurrentBounds);
 
-            debugMiniMap.Update(
+            miniMap.Update(
                 roomManager.CurrentInstance,
                 myHero.X,
                 myHero.Y,
@@ -140,11 +112,6 @@ namespace WPFGame
             Panel.SetZIndex(
                 dummy.VisualShape,
                 ZLayer.Enemies);
-
-            // Интерфейс остаётся поверх игрового мира
-            Panel.SetZIndex(
-                AmmoText,
-                ZLayer.Interface);
 
             gameTimer.Interval =
                 TimeSpan.FromMilliseconds(16);
@@ -207,7 +174,7 @@ namespace WPFGame
             myHero.Draw();
 
             // Маркер миникарты следует за мировым положением игрока
-            debugMiniMap.Update(
+            miniMap.Update(
                 roomManager.CurrentInstance,
                 myHero.X,
                 myHero.Y,
@@ -242,7 +209,7 @@ namespace WPFGame
                     activeBullets);
             }
 
-            // Пока тестовый уровень расположен правее X=0
+            // Предел полёта снарядов берётся из загруженной области уровня
             CombatManager.UpdateBulletsAndHits(
                 activeBullets,
                 activeEnemies,

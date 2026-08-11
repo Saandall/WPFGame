@@ -89,8 +89,11 @@ namespace WPFGame.Level
                 level.StartRoom;
 
             currentTiles =
-                SpawnRoom(
-                    CurrentInstance);
+                RoomRenderer.Render(
+                    canvas,
+                    CurrentInstance.Template,
+                    CurrentInstance.OriginX,
+                    CurrentInstance.OriginY);
         }
 
         // Обновляет переход и возвращает допустимую мировую позицию игрока
@@ -223,8 +226,11 @@ namespace WPFGame.Level
                 targetDoor;
 
             pendingTiles =
-                SpawnRoom(
-                    pendingRoom);
+                RoomRenderer.Render(
+                    canvas,
+                    pendingRoom.Template,
+                    pendingRoom.OriginX,
+                    pendingRoom.OriginY);
         }
 
         // Меняет текущую и предыдущую комнату без переноса игрока
@@ -285,32 +291,6 @@ namespace WPFGame.Level
 
             pendingDoorToCurrent =
                 null;
-        }
-
-        // Создаёт WPF-тайлы экземпляра в его мировых координатах
-        private List<Rectangle> SpawnRoom(
-            RoomInstance room)
-        {
-            var spawnedTiles =
-                new List<Rectangle>();
-
-            foreach (var tile in
-                     room.Template.Tiles)
-            {
-                var rectangle =
-                    RoomSpawner.CreateTile(
-                        tile,
-                        room.OriginX,
-                        room.OriginY);
-
-                canvas.Children.Add(
-                    rectangle);
-
-                spawnedTiles.Add(
-                    rectangle);
-            }
-
-            return spawnedTiles;
         }
 
         // Ограничивает игрока прямоугольником текущей комнаты

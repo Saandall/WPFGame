@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -7,30 +6,21 @@ using WPFGame.Core;
 
 namespace WPFGame.Level
 {
-    // Показывает весь LevelLayout и положение игрока для отладки генерации
-    public sealed class DebugMiniMap
+    // Отображает схему всего уровня и положение игрока
+    public sealed class MiniMap
     {
-        private const double PanelWidth =
-            260;
-
-        private const double PanelHeight =
-            180;
-
-        private const double HeaderHeight =
-            24;
-
-        private const double MapPadding =
-            10;
+        private const double PanelWidth = 260;
+        private const double PanelHeight = 180;
+        private const double HeaderHeight = 24;
+        private const double MapPadding = 10;
 
         private readonly LevelLayout level;
         private readonly Canvas mapCanvas;
-        private readonly TextBlock currentRoomText;
         private readonly Ellipse playerMarker;
 
         private readonly Dictionary<
             string,
-            List<Rectangle>> roomCells =
-                new();
+            List<Rectangle>> roomCells = new();
 
         private readonly Brush normalRoomBrush =
             new SolidColorBrush(
@@ -49,10 +39,9 @@ namespace WPFGame.Level
         private double mapScale;
         private double mapOffsetX;
         private double mapOffsetY;
-
         private string? highlightedRoomId;
 
-        public DebugMiniMap(
+        public MiniMap(
             Canvas viewport,
             LevelLayout level)
         {
@@ -70,14 +59,14 @@ namespace WPFGame.Level
             var grid =
                 CreateLayoutGrid();
 
-            currentRoomText =
+            var header =
                 CreateHeader();
 
             mapCanvas =
                 CreateMapCanvas();
 
             grid.Children.Add(
-                currentRoomText);
+                header);
 
             Grid.SetRow(
                 mapCanvas,
@@ -101,27 +90,23 @@ namespace WPFGame.Level
 
             Panel.SetZIndex(
                 border,
-                ZLayer.Interface +
-                10);
+                ZLayer.Interface + 10);
 
             viewport.Children.Add(
                 border);
 
             CalculateMapTransform();
             DrawRooms();
-            DrawConnectionsAndDoors();
-            DrawRoomLabels();
+            DrawDoors();
 
             playerMarker =
                 CreatePlayerMarker();
 
             mapCanvas.Children.Add(
                 playerMarker);
-
-            PrintLayoutDiagnostics();
         }
 
-        // Обновляет выделение текущей комнаты и точку игрока
+        // Обновляет текущую комнату и положение маркера игрока
         public void Update(
             RoomInstance currentRoom,
             double playerX,
@@ -135,9 +120,6 @@ namespace WPFGame.Level
             HighlightCurrentRoom(
                 currentRoom.Id);
 
-            currentRoomText.Text =
-                $"MAP  |  {currentRoom.Id}";
-
             double playerCenterX =
                 playerX +
                 playerWidth / 2;
@@ -146,26 +128,20 @@ namespace WPFGame.Level
                 playerY +
                 playerHeight / 2;
 
-            double markerX =
-                WorldToMapX(
-                    playerCenterX);
-
-            double markerY =
-                WorldToMapY(
-                    playerCenterY);
-
             Canvas.SetLeft(
                 playerMarker,
-                markerX -
+                WorldToMapX(
+                    playerCenterX) -
                 playerMarker.Width / 2);
 
             Canvas.SetTop(
                 playerMarker,
-                markerY -
+                WorldToMapY(
+                    playerCenterY) -
                 playerMarker.Height / 2);
         }
 
-        // Создаёт рамку, которая не зависит от CameraTransform
+        // Создаёт внешнюю рамку миникарты
         private static Border CreateBorder()
         {
             return new Border
@@ -193,11 +169,14 @@ namespace WPFGame.Level
 
                 CornerRadius =
                     new CornerRadius(
-                        5)
+                        5),
+
+                IsHitTestVisible =
+                    false
             };
         }
 
-        // Делит миникарту на заголовок и область схемы уровня
+        // Делит миникарту на заголовок и область уровня
         private static Grid CreateLayoutGrid()
         {
             var grid =
@@ -223,13 +202,13 @@ namespace WPFGame.Level
             return grid;
         }
 
-        // Показывает ID текущего экземпляра комнаты
+        // Создаёт заголовок миникарты
         private static TextBlock CreateHeader()
         {
             return new TextBlock
             {
                 Text =
-                    "MAP",
+                    "Карта",
 
                 Foreground =
                     Brushes.White,
@@ -249,14 +228,13 @@ namespace WPFGame.Level
             };
         }
 
-        // Создаёт отдельный Canvas внутри рамки
+        // Создаёт область для схемы уровня
         private static Canvas CreateMapCanvas()
         {
             return new Canvas
             {
                 Width =
-                    PanelWidth -
-                    2,
+                    PanelWidth - 2,
 
                 Height =
                     PanelHeight -
@@ -268,7 +246,7 @@ namespace WPFGame.Level
             };
         }
 
-        // Рассчитывает общий масштаб, чтобы весь уровень сразу помещался в рамку
+        // Выбирает единый масштаб, чтобы весь уровень помещался в миникарту
         private void CalculateMapTransform()
         {
             var occupiedCells =
@@ -351,7 +329,7 @@ namespace WPFGame.Level
                 mapScale;
         }
 
-        // Рисует каждый занятый блок каждого экземпляра комнаты
+        // Рисует фактически занятые блоки каждой комнаты
         private void DrawRooms()
         {
             foreach (var room in
@@ -385,7 +363,10 @@ namespace WPFGame.Level
                                 Brushes.Gray,
 
                             StrokeThickness =
-                                1
+                                1,
+
+                            IsHitTestVisible =
+                                false
                         };
 
                     double worldX =
@@ -419,8 +400,8 @@ namespace WPFGame.Level
             }
         }
 
-        // Отмечает активные двери и отдельно показывает ошибочную стыковку
-        private void DrawConnectionsAndDoors()
+        // Отмечает активные дверные проёмы комнат
+        private void DrawDoors()
         {
             foreach (var room in
                      level.Rooms)
@@ -433,12 +414,7 @@ namespace WPFGame.Level
                             room,
                             door);
 
-                    bool connected =
-                        level.GetConnectedRoom(
-                            room.Id,
-                            door.Id) is not null;
-
-                    var doorMarker =
+                    var marker =
                         new Ellipse
                         {
                             Width =
@@ -448,170 +424,31 @@ namespace WPFGame.Level
                                 4,
 
                             Fill =
-                                connected
-                                    ? Brushes.LimeGreen
-                                    : Brushes.OrangeRed
+                                Brushes.LightGray,
+
+                            IsHitTestVisible =
+                                false
                         };
 
                     Canvas.SetLeft(
-                        doorMarker,
+                        marker,
                         WorldToMapX(
                             center.X) -
-                        2);
+                        marker.Width / 2);
 
                     Canvas.SetTop(
-                        doorMarker,
+                        marker,
                         WorldToMapY(
                             center.Y) -
-                        2);
+                        marker.Height / 2);
 
                     mapCanvas.Children.Add(
-                        doorMarker);
+                        marker);
                 }
-            }
-
-            foreach (var connection in
-                     level.Connections)
-            {
-                RoomInstance firstRoom =
-                    level.GetRoom(
-                        connection.First.RoomInstanceId);
-
-                RoomInstance secondRoom =
-                    level.GetRoom(
-                        connection.Second.RoomInstanceId);
-
-                DoorSlot firstDoor =
-                    firstRoom.GetRequiredDoor(
-                        connection.First.DoorId);
-
-                DoorSlot secondDoor =
-                    secondRoom.GetRequiredDoor(
-                        connection.Second.DoorId);
-
-                Point firstCenter =
-                    GetDoorWorldCenter(
-                        firstRoom,
-                        firstDoor);
-
-                Point secondCenter =
-                    GetDoorWorldCenter(
-                        secondRoom,
-                        secondDoor);
-
-                double deltaX =
-                    secondCenter.X -
-                    firstCenter.X;
-
-                double deltaY =
-                    secondCenter.Y -
-                    firstCenter.Y;
-
-                bool centersMatch =
-                    Math.Abs(
-                        deltaX) <
-                        0.1 &&
-                    Math.Abs(
-                        deltaY) <
-                        0.1;
-
-                if (centersMatch)
-                {
-                    continue;
-                }
-
-                // Красная линия появляется только при несовпадении центров дверей
-                var mismatchLine =
-                    new Line
-                    {
-                        X1 =
-                            WorldToMapX(
-                                firstCenter.X),
-
-                        Y1 =
-                            WorldToMapY(
-                                firstCenter.Y),
-
-                        X2 =
-                            WorldToMapX(
-                                secondCenter.X),
-
-                        Y2 =
-                            WorldToMapY(
-                                secondCenter.Y),
-
-                        Stroke =
-                            Brushes.Red,
-
-                        StrokeThickness =
-                            3
-                    };
-
-                mapCanvas.Children.Add(
-                    mismatchLine);
             }
         }
 
-        // Добавляет короткий номер экземпляра внутрь каждой комнаты
-        private void DrawRoomLabels()
-        {
-            foreach (var room in
-                     level.Rooms)
-            {
-                var cells =
-                    room.GetOccupiedWorldCells()
-                        .ToList();
-
-                double centerX =
-                    cells.Average(
-                        cell =>
-                            (cell.Col + 0.5) *
-                            RoomMetrics.CellWidth);
-
-                double centerY =
-                    cells.Average(
-                        cell =>
-                            (cell.Row + 0.5) *
-                            RoomMetrics.CellHeight);
-
-                var label =
-                    new TextBlock
-                    {
-                        Text =
-                            GetShortRoomId(
-                                room.Id),
-
-                        Foreground =
-                            Brushes.White,
-
-                        FontSize =
-                            9,
-
-                        FontWeight =
-                            FontWeights.Bold,
-
-                        IsHitTestVisible =
-                            false
-                    };
-
-                Canvas.SetLeft(
-                    label,
-                    WorldToMapX(
-                        centerX) -
-                    7);
-
-                Canvas.SetTop(
-                    label,
-                    WorldToMapY(
-                        centerY) -
-                    7);
-
-                mapCanvas.Children.Add(
-                    label);
-            }
-        }
-
-        // Создаёт маркер мирового центра игрока
+        // Создаёт маркер центра игрока
         private static Ellipse CreatePlayerMarker()
         {
             return new Ellipse
@@ -636,7 +473,7 @@ namespace WPFGame.Level
             };
         }
 
-        // Меняет цвет только при фактическом переходе в другой RoomInstance
+        // Выделяет комнату, в которой сейчас находится игрок
         private void HighlightCurrentRoom(
             string roomId)
         {
@@ -675,7 +512,7 @@ namespace WPFGame.Level
                 roomId;
         }
 
-        // Возвращает мировой центр конкретного дверного проёма
+        // Возвращает мировой центр дверного проёма
         private static Point GetDoorWorldCenter(
             RoomInstance room,
             DoorSlot door)
@@ -741,7 +578,7 @@ namespace WPFGame.Level
             };
         }
 
-        // Переводит мировую X-координату в координату Canvas миникарты
+        // Переводит мировую X-координату в координату миникарты
         private double WorldToMapX(
             double worldX)
         {
@@ -750,117 +587,13 @@ namespace WPFGame.Level
                    mapScale;
         }
 
-        // Переводит мировую Y-координату в координату Canvas миникарты
+        // Переводит мировую Y-координату в координату миникарты
         private double WorldToMapY(
             double worldY)
         {
             return mapOffsetY +
                    worldY *
                    mapScale;
-        }
-
-        // Оставляет в подписи только короткую часть ID экземпляра
-        private static string GetShortRoomId(
-            string roomId)
-        {
-            int separator =
-                roomId.LastIndexOf(
-                    '_');
-
-            return separator >= 0 &&
-                   separator <
-                   roomId.Length - 1
-                ? roomId[
-                    (separator + 1)..]
-                : roomId;
-        }
-
-        // Печатает фактическое размещение и точность соединений в Output Debug
-        private void PrintLayoutDiagnostics()
-        {
-            Debug.WriteLine(
-                "========================================");
-
-            Debug.WriteLine(
-                $"[MINIMAP] Rooms={level.Rooms.Count}, " +
-                $"Connections={level.Connections.Count}");
-
-            foreach (var room in
-                     level.Rooms.OrderBy(
-                         room => room.Id))
-            {
-                string occupied =
-                    string.Join(
-                        ", ",
-                        room.GetOccupiedWorldCells()
-                            .Select(
-                                cell =>
-                                    $"({cell.Col},{cell.Row})"));
-
-                Debug.WriteLine(
-                    $"[MINIMAP] {room.Id} | " +
-                    $"template={room.Template.Id} | " +
-                    $"originCell=({room.WorldCellCol}," +
-                    $"{room.WorldCellRow}) | " +
-                    $"occupied={occupied}");
-            }
-
-            foreach (var connection in
-                     level.Connections)
-            {
-                RoomInstance firstRoom =
-                    level.GetRoom(
-                        connection.First.RoomInstanceId);
-
-                RoomInstance secondRoom =
-                    level.GetRoom(
-                        connection.Second.RoomInstanceId);
-
-                DoorSlot firstDoor =
-                    firstRoom.GetRequiredDoor(
-                        connection.First.DoorId);
-
-                DoorSlot secondDoor =
-                    secondRoom.GetRequiredDoor(
-                        connection.Second.DoorId);
-
-                Point firstCenter =
-                    GetDoorWorldCenter(
-                        firstRoom,
-                        firstDoor);
-
-                Point secondCenter =
-                    GetDoorWorldCenter(
-                        secondRoom,
-                        secondDoor);
-
-                bool aligned =
-                    RoomPlacement.AreDoorsAligned(
-                        firstRoom,
-                        firstDoor,
-                        secondRoom,
-                        secondDoor);
-
-                double deltaX =
-                    secondCenter.X -
-                    firstCenter.X;
-
-                double deltaY =
-                    secondCenter.Y -
-                    firstCenter.Y;
-
-                Debug.WriteLine(
-                    $"[MINIMAP] CONNECT " +
-                    $"{connection.First.RoomInstanceId}/" +
-                    $"{connection.First.DoorId} <-> " +
-                    $"{connection.Second.RoomInstanceId}/" +
-                    $"{connection.Second.DoorId} | " +
-                    $"aligned={aligned} | " +
-                    $"delta=({deltaX},{deltaY})");
-            }
-
-            Debug.WriteLine(
-                "========================================");
         }
     }
 }

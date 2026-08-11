@@ -10,9 +10,6 @@ namespace WPFGame.Level
             int seed,
             int roomCount = 8)
         {
-            System.Diagnostics.Debug.WriteLine(
-                $"[GEN] requestedSeed={seed}, roomCount={roomCount}");
-
             if (roomCount < 2)
             {
                 throw new ArgumentOutOfRangeException(
@@ -51,10 +48,6 @@ namespace WPFGame.Level
                         definitions,
                         out LevelLayout? level))
                 {
-                    System.Diagnostics.Debug.WriteLine(
-                        $"[GEN] success attempt={attempt}, " +
-                        $"attemptSeed={attemptSeed}");
-
                     return level;
                 }
             }
@@ -164,15 +157,6 @@ namespace WPFGame.Level
                     candidates[
                         random.Next(
                             candidates.Count)];
-
-                System.Diagnostics.Debug.WriteLine(
-                    $"[GEN] room={index:00}, " +
-                    $"definition={selected.Definition.Id}, " +
-                    $"entry={selected.EntryDoor.Id}, " +
-                    $"exit={selected.ExitDoor?.Id ?? "none"}, " +
-                    $"cell=({selected.WorldCellCol}," +
-                    $"{selected.WorldCellRow}), " +
-                    $"candidates={candidates.Count}");
 
                 var room =
                     new RoomInstance(

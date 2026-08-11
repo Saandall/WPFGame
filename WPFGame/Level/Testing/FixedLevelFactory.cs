@@ -1,6 +1,6 @@
 namespace WPFGame.Level
 {
-    // Создаёт стабильный ручной уровень через общую модель LevelLayout
+    // Создаёт стабильный ручной уровень для проверки общей системы комнат
     public static class FixedLevelFactory
     {
         public static LevelLayout Create()
@@ -24,8 +24,8 @@ namespace WPFGame.Level
                 AddConnectedRoom(
                     level,              // в какой уровень 
                     room1,              // от какой уже размещённой комнаты
-                    "right_0_0",        // какую двень используем
-                    "fixed_02",         // id нового заготовленного roomInstance
+                    "right_0_0",        // какую дверь используем
+                    "fixed_02",         // ID нового экземпляра комнаты
                     TestRooms.Room2(),  // какой шаблон используем
                     "left_0_0");        // к какой двери стыкуем
 
