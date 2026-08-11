@@ -28,6 +28,7 @@ namespace WPFGame
         private Weapon currentWeapon;
         private RoomManager roomManager;
         private CameraController camera;
+        private DebugMiniMap debugMiniMap;
 
         // Позволяет быстро вернуться к стабильному ручному уровню
         private const bool UseGeneratedLevel =
@@ -70,15 +71,17 @@ namespace WPFGame
 
                 System.Diagnostics.Debug.WriteLine(
                     $"Generated level seed: {generatedSeed}");
-
-                LevelGenerationDiagnostics.Print(
-                    level,
-                    generatedSeed);
             }
 
             roomManager =
                 new RoomManager(
                     GameArea,
+                    level);
+
+            // Миникарта использует готовый LevelLayout и не зависит от камеры
+            debugMiniMap =
+                new DebugMiniMap(
+                    Viewport,
                     level);
 
             camera = new CameraController(
@@ -108,6 +111,13 @@ namespace WPFGame
                 myHero.Width,
                 myHero.Height,
                 roomManager.CurrentBounds);
+
+            debugMiniMap.Update(
+                roomManager.CurrentInstance,
+                myHero.X,
+                myHero.Y,
+                myHero.Width,
+                myHero.Height);
 
             ApplyCamera();
 
@@ -195,6 +205,14 @@ namespace WPFGame
                 correctedPosition.Y;
 
             myHero.Draw();
+
+            // Маркер миникарты следует за мировым положением игрока
+            debugMiniMap.Update(
+                roomManager.CurrentInstance,
+                myHero.X,
+                myHero.Y,
+                myHero.Width,
+                myHero.Height);
 
             foreach (var enemy in activeEnemies)
             {
