@@ -5,8 +5,8 @@ namespace WPFGame.Level
     {
         public static LevelLayout Create()
         {
-            var level =
-                new LevelLayout();
+            // создаём пустой уровень
+            var level = new LevelLayout();
 
             var room1 =
                 new RoomInstance(
@@ -19,14 +19,15 @@ namespace WPFGame.Level
                 room1,
                 isStartRoom: true);
 
+            // пристыковываем комнаты к уже размещённой.
             RoomInstance room2 =
                 AddConnectedRoom(
-                    level,
-                    room1,
-                    "right_0_0",
-                    "fixed_02",
-                    TestRooms.Room2(),
-                    "left_0_0");
+                    level,              // в какой уровень 
+                    room1,              // от какой уже размещённой комнаты
+                    "right_0_0",        // какую двень используем
+                    "fixed_02",         // id нового заготовленного roomInstance
+                    TestRooms.Room2(),  // какой шаблон используем
+                    "left_0_0");        // к какой двери стыкуем
 
             _ = AddConnectedRoom(
                 level,

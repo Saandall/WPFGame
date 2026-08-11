@@ -3,6 +3,7 @@ namespace WPFGame.Level
     // Рассчитывает положение комнаты по совмещаемым дверям
     public static class RoomPlacement
     {
+        // даёт глобальную клетку, в которй должно находиться начало нового RoomInstance
         public static (int Col, int Row)
             CalculateTargetCell(
                 RoomInstance sourceRoom,
@@ -10,18 +11,25 @@ namespace WPFGame.Level
                 RoomTemplate targetTemplate,
                 DoorSlot targetDoor)
         {
+            // проверяем на наличие всех компонентов
+            // размещённая комната
             ArgumentNullException.ThrowIfNull(
                 sourceRoom);
 
+            // конкретная дверь в ней
             ArgumentNullException.ThrowIfNull(
                 sourceDoor);
 
+            // шаблон комнаты, которую хотим поставить
             ArgumentNullException.ThrowIfNull(
                 targetTemplate);
 
+            // дверь, которую хотим состыковать
             ArgumentNullException.ThrowIfNull(
                 targetDoor);
 
+
+            // проверяем, что дверь принадлежит шаблону
             ValidateDoorBelongsToTemplate(
                 sourceRoom.Template,
                 sourceDoor);
@@ -30,10 +38,13 @@ namespace WPFGame.Level
                 targetTemplate,
                 targetDoor);
 
+            // проверяем, что двери стыкуются по направлениям
             ValidateOppositeDirections(
                 sourceDoor,
                 targetDoor);
 
+
+            // вычисляем куда нужно тыкнуть комнату, чтобы они состыковались по дверям с уже существующей комнатой
             if (sourceDoor.Direction is
                 Direction.Left or
                 Direction.Right)
@@ -48,6 +59,7 @@ namespace WPFGame.Level
                         0,
                         targetDoor);
 
+                // считаем строку новой комнату так, чтобы двери были на одной высоте
                 int targetWorldRow =
                     sourceRoom.WorldCellRow +
                     sourceDoor.CellRow -

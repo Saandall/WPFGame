@@ -3,31 +3,24 @@ namespace WPFGame.Level
     // Хранит готовое расположение комнат и связи между их дверями
     public class LevelLayout
     {
-        private readonly Dictionary<
-            string,
-            RoomInstance> rooms = new();
+        private readonly Dictionary<string, RoomInstance> rooms = new();
 
-        private readonly Dictionary<
-            RoomDoorReference,
-            RoomConnection> connectionsByDoor =
-                new();
+        private readonly Dictionary<RoomDoorReference, RoomConnection> connectionsByDoor = new();
 
-        private readonly List<
-            RoomConnection> connections =
-                new();
+        private readonly List<RoomConnection> connections = new();
 
-        private readonly HashSet<
-            (int Col, int Row)> occupiedWorldCells =
-                new();
+        private readonly HashSet<(int Col, int Row)> occupiedWorldCells = new();
 
         private RoomInstance? startRoom;
 
+        // можно читать извне какие комнаты и связи существуют
         public IReadOnlyCollection<RoomInstance> Rooms =>
             rooms.Values;
 
         public IReadOnlyList<RoomConnection> Connections =>
             connections;
 
+        // на случай если попытаться получить стартовую комнату до начала уровня
         public RoomInstance StartRoom =>
             startRoom ??
             throw new InvalidOperationException(
@@ -51,6 +44,7 @@ namespace WPFGame.Level
                 room.GetOccupiedWorldCells()
                     .ToList();
 
+            // проверка пересечения. если хотя бы одна клетка комнаты занята клеткой другой - исключение
             foreach (var cell in worldCells)
             {
                 if (occupiedWorldCells.Contains(cell))
@@ -61,6 +55,7 @@ namespace WPFGame.Level
                 }
             }
 
+            // если второй раз задаём стартовую комнату
             if (isStartRoom &&
                 startRoom is not null)
             {
@@ -68,9 +63,8 @@ namespace WPFGame.Level
                     "Стартовая комната уже задана.");
             }
 
-            rooms.Add(
-                room.Id,
-                room);
+            // если всё хорошо - добавляем
+            rooms.Add(room.Id, room);
 
             foreach (var cell in worldCells)
             {
@@ -208,6 +202,7 @@ namespace WPFGame.Level
                     currentRoomId,
                     currentDoorId);
 
+            // нельзя подключить одну верь дважды
             if (!connectionsByDoor.TryGetValue(
                     currentReference,
                     out var connection))

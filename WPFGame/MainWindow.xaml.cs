@@ -70,6 +70,10 @@ namespace WPFGame
 
                 System.Diagnostics.Debug.WriteLine(
                     $"Generated level seed: {generatedSeed}");
+
+                LevelGenerationDiagnostics.Print(
+                    level,
+                    generatedSeed);
             }
 
             roomManager =

@@ -3,6 +3,7 @@ namespace WPFGame.Level
     // Собирает стандартную оболочку комнаты из блоков
     public static class RoomBuilder
     {
+        // получаем id комнаты, задействованные блоки и двери комнаты
         public static RoomTemplate Build(
             string id,
             IEnumerable<(int Col, int Row)> occupiedCells,
@@ -11,13 +12,14 @@ namespace WPFGame.Level
                 int CellCol,
                 int CellRow)> doors)
         {
+            // создаём новую комнату по входным данным
             var room = new RoomTemplate(
                 id,
                 occupiedCells);
-
+            
             ValidateConnectedShape(room);
 
-            // Двери добавляются до пола, чтобы учесть нижние проходы
+            // Двери добавляются до добавления пола, чтобы учесть нижние проходы
             foreach (var door in doors)
             {
                 room.AddDoor(
@@ -37,10 +39,12 @@ namespace WPFGame.Level
         {
             var firstCell =
                 room.OccupiedCells.First();
-
+            
+            // множество просмотренных блоков
             var visited =
                 new HashSet<(int Col, int Row)>();
-
+            
+            // очередь из блоков
             var queue =
                 new Queue<(int Col, int Row)>();
 

@@ -10,9 +10,11 @@ namespace WPFGame.Level
         private readonly double deadZoneWidth;
         private readonly double deadZoneHeight;
 
+        // мировые координаты левого верхнего угла камеры
         public double X { get; private set; }
         public double Y { get; private set; }
 
+        // первые два параметра обозримой области, вторые два размеры мёртвой зоны
         public CameraController(
             double viewportWidth,
             double viewportHeight,
@@ -33,12 +35,14 @@ namespace WPFGame.Level
             double playerHeight,
             Rect worldBounds)
         {
+            // ищем центр модельки игрока
             double playerCenterX =
                 playerX + playerWidth / 2;
 
             double playerCenterY =
                 playerY + playerHeight / 2;
 
+            // строим мёртвую зону через отступ от центра экрана
             double viewCenterX =
                 X + viewportWidth / 2;
 
@@ -57,6 +61,7 @@ namespace WPFGame.Level
             double bottom =
                 viewCenterY + deadZoneHeight / 2;
 
+            // если вышел за мёртвую зону, то перемещаем камеру
             if (playerCenterX < left)
             {
                 X -= left - playerCenterX;

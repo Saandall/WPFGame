@@ -3,12 +3,14 @@ namespace WPFGame.Level
     // Описывает конкретное размещение шаблона комнаты в уровне
     public class RoomInstance
     {
+        // храним id конкретного экземпляра комнаты, её шаблон и расположение в мировых координатах (Col, Row)
         public string Id { get; }
         public RoomTemplate Template { get; }
 
         public int WorldCellCol { get; }
         public int WorldCellRow { get; }
 
+        // перевод координат сетки в пиксельные мировые координаты
         public double OriginX =>
             WorldCellCol *
             RoomMetrics.CellWidth;
@@ -16,13 +18,15 @@ namespace WPFGame.Level
         public double OriginY =>
             WorldCellRow *
             RoomMetrics.CellHeight;
-
+        
+        // размер комнаты такой же как и у шаблона
         public double Width =>
             Template.Width;
 
         public double Height =>
             Template.Height;
 
+        // проверяет на корректность и сохраняет комнату иначе выдаёт исключение
         public RoomInstance(
             string id,
             RoomTemplate template,

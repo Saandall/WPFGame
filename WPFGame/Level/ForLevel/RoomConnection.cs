@@ -8,9 +8,11 @@ namespace WPFGame.Level
     // Хранит двустороннюю связь между двумя дверями уровня
     public class RoomConnection
     {
+        // первая и вторая двери
         public RoomDoorReference First { get; }
         public RoomDoorReference Second { get; }
 
+        // фиксируем двери
         public RoomConnection(
             RoomDoorReference first,
             RoomDoorReference second)

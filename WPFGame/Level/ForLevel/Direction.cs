@@ -1,5 +1,6 @@
 namespace WPFGame.Level
 {
+    // перечисление сторон, используется там где нужно указать направление двери
     public enum Direction
     {
         Left,
@@ -8,10 +9,11 @@ namespace WPFGame.Level
         Bottom
     }
 
+    //
     public static class DirectionExtensions
     {
-        // Если вышел из комнаты вправо — в следующую заходишь как бы "слева".
-        // Нужно, чтобы понять, в какую EntryPoint ставить игрока в новой комнате.
+        // Если вышел из комнаты вправо — в следующую заходишь слева
+        // используется для сопоставления дверей
         public static Direction Opposite(this Direction direction) => direction switch
         {
             Direction.Left => Direction.Right,

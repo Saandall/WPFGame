@@ -8,12 +8,14 @@ namespace WPFGame.Level
     // Превращает данные тайлов в WPF-объекты
     public static class RoomSpawner
     {
+        // получает canvas - куда рисовать, какую комнату рисовать мировое начало комнаты
         public static void Spawn(
             Canvas canvas,
             RoomTemplate room,
             double originX = 0,
             double originY = 0)
         {
+            // проходимся по каждому тайлу и создаём тайл в комнате по данным
             foreach (var tile in room.Tiles)
             {
                 canvas.Children.Add(
@@ -30,6 +32,7 @@ namespace WPFGame.Level
             double originX = 0,
             double originY = 0)
         {
+            // создаёт объект, который будет отрисован. засовывает в него все полученные данные из TileData
             var rectangle = new Rectangle
             {
                 Tag = tile.Type.ToString(),
@@ -39,6 +42,7 @@ namespace WPFGame.Level
                 Opacity = GetOpacity(tile.Type)
             };
 
+            // ось Z отрисовки. что рисуется поверх чего
             Panel.SetZIndex(
                 rectangle,
                 tile.Type is
@@ -47,6 +51,7 @@ namespace WPFGame.Level
                         ? ZLayer.Slopes
                         : ZLayer.Tiles);
 
+            // связь с мировыми координатами
             Canvas.SetLeft(
                 rectangle,
                 originX + tile.X);
@@ -58,6 +63,7 @@ namespace WPFGame.Level
             return rectangle;
         }
 
+        // раскрашиваем тайлы под соответствующий цвет
         private static Brush GetBrush(
             TileType type)
         {
@@ -83,6 +89,7 @@ namespace WPFGame.Level
             };
         }
 
+        // непрозрачность тайла
         private static double GetOpacity(
             TileType type)
         {
