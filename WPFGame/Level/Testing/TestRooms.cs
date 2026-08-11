@@ -1,6 +1,6 @@
 namespace WPFGame.Level
 {
-    // Заготовленные тестовые комнаты, пока нет генератора
+    // Заготовленные комнаты для ручной проверки системы уровня
     public static class TestRooms
     {
         public static RoomTemplate Room1()

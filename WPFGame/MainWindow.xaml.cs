@@ -28,14 +28,33 @@ namespace WPFGame
         private Weapon currentWeapon;
         private RoomManager roomManager;
         private CameraController camera;
+        private MiniMap miniMap;
+
+        private const int GeneratedRoomCount =
+            8;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            roomManager = new RoomManager(
-                GameArea,
-                TestLevel.StartRoom);
+            int levelSeed =
+                Random.Shared.Next();
+
+            LevelLayout level =
+                LevelGenerator.Generate(
+                    levelSeed,
+                    GeneratedRoomCount);
+
+            roomManager =
+                new RoomManager(
+                    GameArea,
+                    level);
+
+            // Миникарта отображает готовый LevelLayout и не зависит от камеры
+            miniMap =
+                new MiniMap(
+                    Viewport,
+                    level);
 
             camera = new CameraController(
                 viewportWidth: 960,
@@ -65,6 +84,13 @@ namespace WPFGame
                 myHero.Height,
                 roomManager.CurrentBounds);
 
+            miniMap.Update(
+                roomManager.CurrentInstance,
+                myHero.X,
+                myHero.Y,
+                myHero.Width,
+                myHero.Height);
+
             ApplyCamera();
 
             currentWeapon =
@@ -86,11 +112,6 @@ namespace WPFGame
             Panel.SetZIndex(
                 dummy.VisualShape,
                 ZLayer.Enemies);
-
-            // Интерфейс остаётся поверх игрового мира
-            Panel.SetZIndex(
-                AmmoText,
-                ZLayer.Interface);
 
             gameTimer.Interval =
                 TimeSpan.FromMilliseconds(16);
@@ -152,6 +173,14 @@ namespace WPFGame
 
             myHero.Draw();
 
+            // Маркер миникарты следует за мировым положением игрока
+            miniMap.Update(
+                roomManager.CurrentInstance,
+                myHero.X,
+                myHero.Y,
+                myHero.Width,
+                myHero.Height);
+
             foreach (var enemy in activeEnemies)
             {
                 enemy.UpdatePhysics(
@@ -180,7 +209,7 @@ namespace WPFGame
                     activeBullets);
             }
 
-            // Пока тестовый уровень расположен правее X=0
+            // Предел полёта снарядов берётся из загруженной области уровня
             CombatManager.UpdateBulletsAndHits(
                 activeBullets,
                 activeEnemies,

@@ -3,6 +3,8 @@ namespace WPFGame.Level
     // Неизменяемое описание формы и содержимого одной заготовки комнаты
     public class RoomTemplate
     {
+        // храним описание заготовик комнаты: id, ширину, высоту, тайлы, двери, занятые комнатой клетки, начальная позиция игрока (комната спавна)
+
         public string Id { get; }
         public double Width { get; }
         public double Height { get; }
@@ -10,13 +12,14 @@ namespace WPFGame.Level
         public List<TileData> Tiles { get; } = new();
         public List<DoorSlot> Doors { get; } = new();
 
-        // Блоки размером 960x540, из которых состоит комната
+        // множество координат блоков, из которых реально состоят комната
         public HashSet<(int Col, int Row)> OccupiedCells { get; } = new();
 
-        // Начальная позиция используется только для первой комнаты уровня
+        // Начальная позиция в первой комнате уровня
         public double PlayerStartX { get; set; }
         public double PlayerStartY { get; set; }
 
+        // конструктор: получает данные извне в виде набора занятых комнатой клеток и id комнаты
         public RoomTemplate(
             string id,
             IEnumerable<(int Col, int Row)> occupiedCells)
@@ -33,6 +36,7 @@ namespace WPFGame.Level
             int maxCol = -1;
             int maxRow = -1;
 
+            // перебирает блоки и после проверки добавляет в память или разворачивает
             foreach (var cell in occupiedCells)
             {
                 ValidateCell(cell.Col, cell.Row);
@@ -55,6 +59,7 @@ namespace WPFGame.Level
                     nameof(occupiedCells));
             }
 
+            // расчёт фактический длины и ширины комнаты
             Width = (maxCol + 1) * RoomMetrics.CellWidth;
             Height = (maxRow + 1) * RoomMetrics.CellHeight;
         }
@@ -103,6 +108,7 @@ namespace WPFGame.Level
             return door;
         }
 
+        // получение данных двери по её id
         public DoorSlot? GetDoor(string doorId)
         {
             foreach (var door in Doors)
@@ -116,6 +122,7 @@ namespace WPFGame.Level
             return null;
         }
 
+        // проверка корректности расположения клетки
         private static void ValidateCell(
             int cellCol,
             int cellRow)
@@ -137,6 +144,7 @@ namespace WPFGame.Level
             }
         }
 
+        // получение данных о том, что происходит за кнкретной дверью
         private static (int Col, int Row) GetAdjacentCell(
             Direction direction,
             int cellCol,

@@ -4,27 +4,41 @@ using System.Windows.Shapes;
 
 namespace WPFGame.Level
 {
-    // Загружает только текущую комнату и одну комнату у активной двери
+    // Загружает текущий экземпляр комнаты и одного соседа у активной двери
     public class RoomManager
     {
         private readonly Canvas canvas;
+        private readonly LevelLayout level;
 
         private List<Rectangle> currentTiles;
-        private List<Rectangle> pendingTiles = new();
+        private List<Rectangle> pendingTiles =
+            new();
 
-        private RoomTemplate? pendingRoom;
+        private RoomInstance? pendingRoom;
         private DoorSlot? currentDoorToPending;
         private DoorSlot? pendingDoorToCurrent;
 
-        private double pendingOriginX;
-        private double pendingOriginY;
+        public RoomInstance CurrentInstance
+        {
+            get;
+            private set;
+        }
 
-        public RoomTemplate CurrentRoom { get; private set; }
+        // Сохраняет прежний удобный доступ к шаблону текущей комнаты
+        public RoomTemplate CurrentRoom =>
+            CurrentInstance.Template;
 
-        public double CurrentOriginX { get; private set; }
-        public double CurrentOriginY { get; private set; }
+        public double CurrentOriginX =>
+            CurrentInstance.OriginX;
 
-        public bool CurrentRoomChanged { get; private set; }
+        public double CurrentOriginY =>
+            CurrentInstance.OriginY;
+
+        public bool CurrentRoomChanged
+        {
+            get;
+            private set;
+        }
 
         public bool HasPendingRoom =>
             pendingRoom is not null;
@@ -33,21 +47,22 @@ namespace WPFGame.Level
             new(
                 CurrentOriginX,
                 CurrentOriginY,
-                CurrentRoom.Width,
-                CurrentRoom.Height);
+                CurrentInstance.Width,
+                CurrentInstance.Height);
 
         public Rect ActiveBounds
         {
             get
             {
-                var bounds = CurrentBounds;
+                var bounds =
+                    CurrentBounds;
 
                 if (pendingRoom is not null)
                 {
                     bounds.Union(
                         new Rect(
-                            pendingOriginX,
-                            pendingOriginY,
+                            pendingRoom.OriginX,
+                            pendingRoom.OriginY,
                             pendingRoom.Width,
                             pendingRoom.Height));
                 }
@@ -58,18 +73,27 @@ namespace WPFGame.Level
 
         public RoomManager(
             Canvas canvas,
-            RoomTemplate startRoom)
+            LevelLayout level)
         {
-            this.canvas = canvas;
+            this.canvas =
+                canvas ??
+                throw new ArgumentNullException(
+                    nameof(canvas));
 
-            CurrentRoom = startRoom;
-            CurrentOriginX = 0;
-            CurrentOriginY = 0;
+            this.level =
+                level ??
+                throw new ArgumentNullException(
+                    nameof(level));
 
-            currentTiles = SpawnRoom(
-                CurrentRoom,
-                CurrentOriginX,
-                CurrentOriginY);
+            CurrentInstance =
+                level.StartRoom;
+
+            currentTiles =
+                RoomRenderer.Render(
+                    canvas,
+                    CurrentInstance.Template,
+                    CurrentInstance.OriginX,
+                    CurrentInstance.OriginY);
         }
 
         // Обновляет переход и возвращает допустимую мировую позицию игрока
@@ -81,13 +105,15 @@ namespace WPFGame.Level
             double playerWidth,
             double playerHeight)
         {
-            CurrentRoomChanged = false;
+            CurrentRoomChanged =
+                false;
 
-            var playerHitBox = new Rect(
-                playerX,
-                playerY,
-                playerWidth,
-                playerHeight);
+            var playerHitBox =
+                new Rect(
+                    playerX,
+                    playerY,
+                    playerWidth,
+                    playerHeight);
 
             if (pendingRoom is null)
             {
@@ -103,7 +129,9 @@ namespace WPFGame.Level
                         currentDoorToPending))
                 {
                     SwapCurrentAndPendingRooms();
-                    CurrentRoomChanged = true;
+
+                    CurrentRoomChanged =
+                        true;
 
                     return ResolvePlayerInsideLoadedShape(
                         previousPlayerX,
@@ -138,11 +166,12 @@ namespace WPFGame.Level
                 playerHeight);
         }
 
-        // Загружает соседа только после касания триггера конкретной двери
+        // Загружает соседа только возле соединённой двери
         private void TryBeginTransition(
             Rect playerHitBox)
         {
-            foreach (var door in CurrentRoom.Doors)
+            foreach (var door in
+                     CurrentRoom.Doors)
             {
                 if (!IsInsideDoorTrigger(
                         playerHitBox,
@@ -151,9 +180,10 @@ namespace WPFGame.Level
                     continue;
                 }
 
-                var target = TestLevel.GetNextRoom(
-                    CurrentRoom.Id,
-                    door.Id);
+                var target =
+                    level.GetConnectedRoom(
+                        CurrentInstance.Id,
+                        door.Id);
 
                 if (target is null)
                 {
@@ -169,38 +199,41 @@ namespace WPFGame.Level
             }
         }
 
+        // Подготавливает соседний экземпляр комнаты для перехода
         private void BeginTransition(
             DoorSlot sourceDoor,
-            RoomTemplate targetRoom,
+            RoomInstance targetRoom,
             DoorSlot targetDoor)
         {
-            if (targetDoor.Direction !=
-                sourceDoor.Direction.Opposite())
+            if (!RoomPlacement.AreDoorsAligned(
+                    CurrentInstance,
+                    sourceDoor,
+                    targetRoom,
+                    targetDoor))
             {
                 throw new InvalidOperationException(
-                    $"Двери {CurrentRoom.Id}/{sourceDoor.Id} и " +
-                    $"{targetRoom.Id}/{targetDoor.Id} направлены не навстречу друг другу.");
+                    $"Двери {CurrentInstance.Id}/{sourceDoor.Id} и " +
+                    $"{targetRoom.Id}/{targetDoor.Id} не совмещены.");
             }
 
-            var targetOrigin =
-                CalculateTargetOrigin(
-                    sourceDoor,
-                    targetDoor);
+            pendingRoom =
+                targetRoom;
 
-            pendingRoom = targetRoom;
-            pendingOriginX = targetOrigin.X;
-            pendingOriginY = targetOrigin.Y;
+            currentDoorToPending =
+                sourceDoor;
 
-            currentDoorToPending = sourceDoor;
-            pendingDoorToCurrent = targetDoor;
+            pendingDoorToCurrent =
+                targetDoor;
 
-            pendingTiles = SpawnRoom(
-                pendingRoom,
-                pendingOriginX,
-                pendingOriginY);
+            pendingTiles =
+                RoomRenderer.Render(
+                    canvas,
+                    pendingRoom.Template,
+                    pendingRoom.OriginX,
+                    pendingRoom.OriginY);
         }
 
-        // После пересечения новая комната становится текущей без изменения координат игрока
+        // Меняет текущую и предыдущую комнату без переноса игрока
         private void SwapCurrentAndPendingRooms()
         {
             if (pendingRoom is null ||
@@ -210,14 +243,8 @@ namespace WPFGame.Level
                 return;
             }
 
-            RoomTemplate oldCurrentRoom =
-                CurrentRoom;
-
-            double oldCurrentOriginX =
-                CurrentOriginX;
-
-            double oldCurrentOriginY =
-                CurrentOriginY;
+            RoomInstance oldCurrentRoom =
+                CurrentInstance;
 
             List<Rectangle> oldCurrentTiles =
                 currentTiles;
@@ -225,15 +252,17 @@ namespace WPFGame.Level
             DoorSlot oldCurrentDoor =
                 currentDoorToPending;
 
-            CurrentRoom = pendingRoom;
-            CurrentOriginX = pendingOriginX;
-            CurrentOriginY = pendingOriginY;
-            currentTiles = pendingTiles;
+            CurrentInstance =
+                pendingRoom;
 
-            pendingRoom = oldCurrentRoom;
-            pendingOriginX = oldCurrentOriginX;
-            pendingOriginY = oldCurrentOriginY;
-            pendingTiles = oldCurrentTiles;
+            currentTiles =
+                pendingTiles;
+
+            pendingRoom =
+                oldCurrentRoom;
+
+            pendingTiles =
+                oldCurrentTiles;
 
             currentDoorToPending =
                 pendingDoorToCurrent;
@@ -242,95 +271,29 @@ namespace WPFGame.Level
                 oldCurrentDoor;
         }
 
-        // Удаляет только визуальные тайлы временной соседней комнаты
+        // Удаляет визуальные тайлы временной соседней комнаты
         private void RemovePendingRoom()
         {
-            foreach (var tile in pendingTiles)
+            foreach (var tile in
+                     pendingTiles)
             {
-                canvas.Children.Remove(tile);
+                canvas.Children.Remove(
+                    tile);
             }
 
             pendingTiles.Clear();
-            pendingRoom = null;
-            currentDoorToPending = null;
-            pendingDoorToCurrent = null;
+
+            pendingRoom =
+                null;
+
+            currentDoorToPending =
+                null;
+
+            pendingDoorToCurrent =
+                null;
         }
 
-        private List<Rectangle> SpawnRoom(
-            RoomTemplate room,
-            double originX,
-            double originY)
-        {
-            var spawnedTiles =
-                new List<Rectangle>();
-
-            foreach (var tile in room.Tiles)
-            {
-                var rectangle =
-                    RoomSpawner.CreateTile(
-                        tile,
-                        originX,
-                        originY);
-
-                canvas.Children.Add(
-                    rectangle);
-
-                spawnedTiles.Add(
-                    rectangle);
-            }
-
-            return spawnedTiles;
-        }
-
-        // Совмещает мировые позиции двух конкретных дверей
-        private Point CalculateTargetOrigin(
-            DoorSlot sourceDoor,
-            DoorSlot targetDoor)
-        {
-            double sourceBoundary =
-                GetDoorBoundary(
-                    sourceDoor,
-                    CurrentOriginX,
-                    CurrentOriginY);
-
-            double targetBoundary =
-                GetDoorBoundary(
-                    targetDoor,
-                    0,
-                    0);
-
-            var sourceRange =
-                GetDoorRange(
-                    sourceDoor,
-                    CurrentOriginX,
-                    CurrentOriginY);
-
-            var targetRange =
-                GetDoorRange(
-                    targetDoor,
-                    0,
-                    0);
-
-            if (sourceDoor.Direction is
-                Direction.Left or
-                Direction.Right)
-            {
-                return new Point(
-                    sourceBoundary -
-                    targetBoundary,
-
-                    sourceRange.Start -
-                    targetRange.Start);
-            }
-
-            return new Point(
-                sourceRange.Start -
-                targetRange.Start,
-
-                sourceBoundary -
-                targetBoundary);
-        }
-
+        // Ограничивает игрока прямоугольником текущей комнаты
         private Point ClampPlayerToCurrentRoom(
             double playerX,
             double playerY,
@@ -356,32 +319,40 @@ namespace WPFGame.Level
                     ? currentDoorToPending?.Direction
                     : null;
 
-            if (openDirection != Direction.Left)
+            if (openDirection !=
+                Direction.Left)
             {
-                playerX = Math.Max(
-                    playerX,
-                    minX);
+                playerX =
+                    Math.Max(
+                        playerX,
+                        minX);
             }
 
-            if (openDirection != Direction.Right)
+            if (openDirection !=
+                Direction.Right)
             {
-                playerX = Math.Min(
-                    playerX,
-                    maxX);
+                playerX =
+                    Math.Min(
+                        playerX,
+                        maxX);
             }
 
-            if (openDirection != Direction.Top)
+            if (openDirection !=
+                Direction.Top)
             {
-                playerY = Math.Max(
-                    playerY,
-                    minY);
+                playerY =
+                    Math.Max(
+                        playerY,
+                        minY);
             }
 
-            if (openDirection != Direction.Bottom)
+            if (openDirection !=
+                Direction.Bottom)
             {
-                playerY = Math.Min(
-                    playerY,
-                    maxY);
+                playerY =
+                    Math.Min(
+                        playerY,
+                        maxY);
             }
 
             return new Point(
@@ -398,41 +369,47 @@ namespace WPFGame.Level
             double playerWidth,
             double playerHeight)
         {
-            var candidate = new Rect(
-                playerX,
-                playerY,
-                playerWidth,
-                playerHeight);
+            var candidate =
+                new Rect(
+                    playerX,
+                    playerY,
+                    playerWidth,
+                    playerHeight);
 
-            if (IsHitBoxInsideLoadedShape(candidate))
+            if (IsHitBoxInsideLoadedShape(
+                    candidate))
             {
                 return new Point(
                     playerX,
                     playerY);
             }
 
-            // Сначала сохраняется горизонтальная часть движения
-            var horizontalOnly = new Rect(
-                playerX,
-                previousPlayerY,
-                playerWidth,
-                playerHeight);
+            // Сохраняет горизонтальную часть допустимого движения
+            var horizontalOnly =
+                new Rect(
+                    playerX,
+                    previousPlayerY,
+                    playerWidth,
+                    playerHeight);
 
-            if (IsHitBoxInsideLoadedShape(horizontalOnly))
+            if (IsHitBoxInsideLoadedShape(
+                    horizontalOnly))
             {
                 return new Point(
                     playerX,
                     previousPlayerY);
             }
 
-            // Затем сохраняется вертикальная часть движения
-            var verticalOnly = new Rect(
-                previousPlayerX,
-                playerY,
-                playerWidth,
-                playerHeight);
+            // Сохраняет вертикальную часть допустимого движения
+            var verticalOnly =
+                new Rect(
+                    previousPlayerX,
+                    playerY,
+                    playerWidth,
+                    playerHeight);
 
-            if (IsHitBoxInsideLoadedShape(verticalOnly))
+            if (IsHitBoxInsideLoadedShape(
+                    verticalOnly))
             {
                 return new Point(
                     previousPlayerX,
@@ -444,11 +421,12 @@ namespace WPFGame.Level
                 previousPlayerY);
         }
 
-        // Проверяет четыре угла хитбокса в объединении загруженных блоков
+        // Проверяет четыре угла хитбокса в загруженных блоках
         private bool IsHitBoxInsideLoadedShape(
             Rect hitBox)
         {
-            const double inset = 0.1;
+            const double inset =
+                0.1;
 
             return IsPointInsideLoadedShape(
                        hitBox.Left + inset,
@@ -464,7 +442,7 @@ namespace WPFGame.Level
                        hitBox.Bottom - inset);
         }
 
-        // Проверяет точку в текущей или временно загруженной комнате
+        // Проверяет точку в текущем или временном экземпляре комнаты
         private bool IsPointInsideLoadedShape(
             double x,
             double y)
@@ -472,9 +450,7 @@ namespace WPFGame.Level
             if (IsPointInsideRoom(
                     x,
                     y,
-                    CurrentRoom,
-                    CurrentOriginX,
-                    CurrentOriginY))
+                    CurrentInstance))
             {
                 return true;
             }
@@ -483,28 +459,25 @@ namespace WPFGame.Level
                    IsPointInsideRoom(
                        x,
                        y,
-                       pendingRoom,
-                       pendingOriginX,
-                       pendingOriginY);
+                       pendingRoom);
         }
 
-        // Проверяет точку внутри одного из занятых блоков комнаты
+        // Проверяет точку внутри одного из занятых блоков экземпляра
         private static bool IsPointInsideRoom(
             double x,
             double y,
-            RoomTemplate room,
-            double originX,
-            double originY)
+            RoomInstance room)
         {
-            foreach (var cell in room.OccupiedCells)
+            foreach (var cell in
+                     room.Template.OccupiedCells)
             {
                 double left =
-                    originX +
+                    room.OriginX +
                     cell.Col *
                     RoomMetrics.CellWidth;
 
                 double top =
-                    originY +
+                    room.OriginY +
                     cell.Row *
                     RoomMetrics.CellHeight;
 
@@ -528,6 +501,7 @@ namespace WPFGame.Level
             return false;
         }
 
+        // Проверяет попадание игрока в область загрузки двери
         private bool IsInsideDoorTrigger(
             Rect playerHitBox,
             DoorSlot door)
@@ -535,14 +509,12 @@ namespace WPFGame.Level
             double boundary =
                 GetDoorBoundary(
                     door,
-                    CurrentOriginX,
-                    CurrentOriginY);
+                    CurrentInstance);
 
             var range =
                 GetDoorRange(
                     door,
-                    CurrentOriginX,
-                    CurrentOriginY);
+                    CurrentInstance);
 
             return door.Direction switch
             {
@@ -594,6 +566,7 @@ namespace WPFGame.Level
             };
         }
 
+        // Проверяет полное пересечение мировой границы двери
         private bool HasFullyCrossedDoor(
             Rect playerHitBox,
             DoorSlot door)
@@ -601,8 +574,7 @@ namespace WPFGame.Level
             double boundary =
                 GetDoorBoundary(
                     door,
-                    CurrentOriginX,
-                    CurrentOriginY);
+                    CurrentInstance);
 
             return door.Direction switch
             {
@@ -626,7 +598,7 @@ namespace WPFGame.Level
             };
         }
 
-        // После отхода от двери предыдущая комната больше не нужна на Canvas
+        // Проверяет удаление игрока от входной двери новой комнаты
         private bool HasMovedAwayFromDoor(
             Rect playerHitBox,
             DoorSlot door)
@@ -634,8 +606,7 @@ namespace WPFGame.Level
             double boundary =
                 GetDoorBoundary(
                     door,
-                    CurrentOriginX,
-                    CurrentOriginY);
+                    CurrentInstance);
 
             return door.Direction switch
             {
@@ -663,30 +634,30 @@ namespace WPFGame.Level
             };
         }
 
+        // Возвращает мировую координату границы двери
         private static double GetDoorBoundary(
             DoorSlot door,
-            double originX,
-            double originY)
+            RoomInstance room)
         {
             return door.Direction switch
             {
                 Direction.Left =>
-                    originX +
+                    room.OriginX +
                     door.CellCol *
                     RoomMetrics.CellWidth,
 
                 Direction.Right =>
-                    originX +
+                    room.OriginX +
                     (door.CellCol + 1) *
                     RoomMetrics.CellWidth,
 
                 Direction.Top =>
-                    originY +
+                    room.OriginY +
                     door.CellRow *
                     RoomMetrics.CellHeight,
 
                 Direction.Bottom =>
-                    originY +
+                    room.OriginY +
                     (door.CellRow + 1) *
                     RoomMetrics.CellHeight,
 
@@ -696,20 +667,20 @@ namespace WPFGame.Level
             };
         }
 
+        // Возвращает мировой диапазон дверного проёма
         private static (
             double Start,
             double End)
             GetDoorRange(
                 DoorSlot door,
-                double originX,
-                double originY)
+                RoomInstance room)
         {
             if (door.Direction is
                 Direction.Left or
                 Direction.Right)
             {
                 double floorY =
-                    originY +
+                    room.OriginY +
                     door.CellRow *
                     RoomMetrics.CellHeight +
                     RoomMetrics.FloorY;
@@ -721,7 +692,7 @@ namespace WPFGame.Level
             }
 
             double startX =
-                originX +
+                room.OriginX +
                 door.CellCol *
                 RoomMetrics.CellWidth +
                 RoomMetrics.TopBottomDoorStartX;
@@ -732,6 +703,7 @@ namespace WPFGame.Level
                 RoomMetrics.TopBottomDoorWidth);
         }
 
+        // Проверяет пересечение двух одномерных диапазонов
         private static bool Overlaps(
             double firstStart,
             double firstEnd,
@@ -740,8 +712,10 @@ namespace WPFGame.Level
                 double End
             ) second)
         {
-            return firstEnd >= second.Start &&
-                   firstStart <= second.End;
+            return firstEnd >=
+                       second.Start &&
+                   firstStart <=
+                       second.End;
         }
     }
 }
