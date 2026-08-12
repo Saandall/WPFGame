@@ -130,6 +130,12 @@ namespace WPFGame.Level
                             door.CellCol,
                             door.CellRow)));
 
+            // Для проверки полной коллизии Ground строятся внешние стены и потолок.
+            // Нижняя сторона по-прежнему создаётся RoomBuilder.
+            AddSolidOuterShell(
+                room,
+                selectedDoors);
+
             room.PlayerStartX =
                 100;
 
@@ -148,7 +154,217 @@ namespace WPFGame.Level
             AddDecorations(
                 room);
 
+            // Дополняет сквозные платформы небольшим полностью твёрдым элементом.
+            AddSolidCollisionSample(
+                room);
+
             return room;
+        }
+
+        // Добавляет Ground только по внешним левым, правым и верхним сторонам блоков
+        private void AddSolidOuterShell(
+            RoomTemplate room,
+            IReadOnlyCollection<DoorSlot> activeDoors)
+        {
+            const double boundaryThickness =
+                30;
+
+            var occupiedCells =
+                OccupiedCells.ToHashSet();
+
+            foreach (var cell in
+                     OccupiedCells)
+            {
+                var leftCell =
+                    (Col: cell.Col - 1, Row: cell.Row);
+
+                if (!occupiedCells.Contains(
+                        leftCell))
+                {
+                    AddSideBoundary(
+                        room,
+                        cell.Col,
+                        cell.Row,
+                        Direction.Left,
+                        activeDoors,
+                        boundaryThickness);
+                }
+
+                var rightCell =
+                    (Col: cell.Col + 1, Row: cell.Row);
+
+                if (!occupiedCells.Contains(
+                        rightCell))
+                {
+                    AddSideBoundary(
+                        room,
+                        cell.Col,
+                        cell.Row,
+                        Direction.Right,
+                        activeDoors,
+                        boundaryThickness);
+                }
+
+                var topCell =
+                    (Col: cell.Col, Row: cell.Row - 1);
+
+                if (!occupiedCells.Contains(
+                        topCell))
+                {
+                    AddTopBoundary(
+                        room,
+                        cell.Col,
+                        cell.Row,
+                        activeDoors,
+                        boundaryThickness);
+                }
+            }
+        }
+
+        // Создаёт боковую стену и оставляет проём только у активной боковой двери
+        private static void AddSideBoundary(
+            RoomTemplate room,
+            int cellCol,
+            int cellRow,
+            Direction direction,
+            IReadOnlyCollection<DoorSlot> activeDoors,
+            double boundaryThickness)
+        {
+            DoorSlot? door =
+                activeDoors.FirstOrDefault(
+                    door =>
+                        door.Direction ==
+                            direction &&
+                        door.CellCol ==
+                            cellCol &&
+                        door.CellRow ==
+                            cellRow);
+
+            double cellX =
+                cellCol *
+                RoomMetrics.CellWidth;
+
+            double cellY =
+                cellRow *
+                RoomMetrics.CellHeight;
+
+            double wallX =
+                direction ==
+                Direction.Left
+                    ? cellX
+                    : cellX +
+                      RoomMetrics.CellWidth -
+                      boundaryThickness;
+
+            if (door is null)
+            {
+                room.Tiles.Add(
+                    new TileData(
+                        TileType.Ground,
+                        wallX,
+                        cellY,
+                        boundaryThickness,
+                        RoomMetrics.CellHeight));
+
+                return;
+            }
+
+            double doorStartY =
+                cellY +
+                RoomMetrics.FloorY -
+                RoomMetrics.SideDoorHeight;
+
+            double doorEndY =
+                cellY +
+                RoomMetrics.FloorY;
+
+            if (doorStartY >
+                cellY)
+            {
+                room.Tiles.Add(
+                    new TileData(
+                        TileType.Ground,
+                        wallX,
+                        cellY,
+                        boundaryThickness,
+                        doorStartY -
+                            cellY));
+            }
+
+            double cellBottom =
+                cellY +
+                RoomMetrics.CellHeight;
+
+            if (doorEndY <
+                cellBottom)
+            {
+                room.Tiles.Add(
+                    new TileData(
+                        TileType.Ground,
+                        wallX,
+                        doorEndY,
+                        boundaryThickness,
+                        cellBottom -
+                            doorEndY));
+            }
+        }
+
+        // Создаёт потолок и вырезает стандартный проход у активной верхней двери
+        private static void AddTopBoundary(
+            RoomTemplate room,
+            int cellCol,
+            int cellRow,
+            IReadOnlyCollection<DoorSlot> activeDoors,
+            double boundaryThickness)
+        {
+            DoorSlot? topDoor =
+                activeDoors.FirstOrDefault(
+                    door =>
+                        door.Direction ==
+                            Direction.Top &&
+                        door.CellCol ==
+                            cellCol &&
+                        door.CellRow ==
+                            cellRow);
+
+            double cellX =
+                cellCol *
+                RoomMetrics.CellWidth;
+
+            double cellY =
+                cellRow *
+                RoomMetrics.CellHeight;
+
+            if (topDoor is null)
+            {
+                room.Tiles.Add(
+                    new TileData(
+                        TileType.Ground,
+                        cellX,
+                        cellY,
+                        RoomMetrics.CellWidth,
+                        boundaryThickness));
+
+                return;
+            }
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Ground,
+                    cellX,
+                    cellY,
+                    RoomMetrics.TopBottomDoorStartX,
+                    boundaryThickness));
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Ground,
+                    cellX +
+                        RoomMetrics.TopBottomDoorEndX,
+                    cellY,
+                    RoomMetrics.CellWidth -
+                        RoomMetrics.TopBottomDoorEndX,
+                    boundaryThickness));
         }
 
         // Добавляет лестницы к вертикальным переходам и этажам высокой комнаты
@@ -402,6 +618,48 @@ namespace WPFGame.Level
                     700,
                     240,
                     20));
+        }
+
+        // Добавляет небольшой Ground-элемент для проверки всех сторон твёрдой коллизии
+        private void AddSolidCollisionSample(
+            RoomTemplate room)
+        {
+            switch (style)
+            {
+                case GeneratedRoomStyle.Compact:
+                    room.Tiles.Add(
+                        new TileData(
+                            TileType.Ground,
+                            350,
+                            300,
+                            80,
+                            30));
+                    break;
+
+                case GeneratedRoomStyle.Wide:
+                    room.Tiles.Add(
+                        new TileData(
+                            TileType.Ground,
+                            880,
+                            320,
+                            100,
+                            30));
+                    break;
+
+                case GeneratedRoomStyle.Tall:
+                    room.Tiles.Add(
+                        new TileData(
+                            TileType.Ground,
+                            700,
+                            850,
+                            120,
+                            30));
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(style));
+            }
         }
     }
 
