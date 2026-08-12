@@ -25,7 +25,9 @@ namespace WPFGame.Weapons
       protected int fireCooldownTimer = 0;            // Текущий таймер задержки
       protected bool triggerReady = true;             // Отпустил ли игрок курок?
 
-      public abstract void Attack(Canvas GameArea, double playerX, double playerY, bool facingRight, List<Bullet> activeBullets);
+      public abstract void Attack(Canvas GameArea, double playerX, double playerY, List<WPFGame.Enemies.Enemy> enemies,
+                            System.Windows.Controls.UIElementCollection mapElements,
+                            List<System.Windows.Shapes.Line> tracers);
 
       // Метод, который будет вызываться каждый кадр
       public void Tick(bool isShootingHeld)

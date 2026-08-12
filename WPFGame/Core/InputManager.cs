@@ -13,6 +13,10 @@ namespace WPFGame.Core
       public static bool Shooting { get; private set; }
       public static bool Reloading { get; private set; }
 
+      // Координаты курсора мыши для прицеливания
+      public static double MouseX { get; set; }
+      public static double MouseY { get; set; }
+
       // Метод, который переводит нажатия кнопок WPF в наши флаги
       public static void UpdateKeyState(Key key, bool isPressed)
       {

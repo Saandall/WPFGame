@@ -151,7 +151,7 @@ namespace WPFGame
       private Weapon currentWeapon;
       private List<Bullet> activeBullets = new List<Bullet>();
       private List<Enemy> activeEnemies = new List<Enemy>();
-
+      private List<System.Windows.Shapes.Line> activeTracers = new List<System.Windows.Shapes.Line>();
       // Фичи напарника
       private RoomManager roomManager;
       private CameraController camera;
@@ -171,6 +171,18 @@ namespace WPFGame
          camera.SnapTo(myHero.X, myHero.Y, myHero.Width, myHero.Height, roomManager.CurrentRoom.Width, roomManager.CurrentRoom.Height);
          CameraTransform.X = -camera.X;
          CameraTransform.Y = -camera.Y;
+
+         // Нужно для отслеживаня курсора мыши
+         Viewport.MouseMove += (s, e) =>
+         {
+            var position = e.GetPosition(Viewport);
+            Inputmanager.MouseX = position.X;
+            Inputmanager.MouseY = position.Y;
+
+            Title = $"Mouse: {Inputmanager.MouseX:F0}; {Inputmanager.MouseY:F0}";
+         };
+         /////////////////////////////////////
+
 
          currentWeapon = new Pistol();
 
@@ -201,7 +213,7 @@ namespace WPFGame
          }
          currentWeapon.Tick(Inputmanager.Shooting);
          if (Inputmanager.Reloading) currentWeapon.Reload();
-         if (Inputmanager.Shooting) currentWeapon.Attack(GameArea, myHero.X, myHero.Y, myHero.FacingRight, activeBullets);
+         if (Inputmanager.Shooting) currentWeapon.Attack(GameArea, myHero.X + myHero.Width / 2, myHero.Y + myHero.Height / 2, activeEnemies, GameArea.Children, activeTracers);
          CombatManager.UpdateBulletsAndHits(activeBullets, activeEnemies, GameArea, roomManager.CurrentRoom.Width);
 
          // 3. ИНТЕРФЕЙС
@@ -212,20 +224,21 @@ namespace WPFGame
          // ---------------------------------------------------------
          Rect currentHitBox = new Rect(myHero.X, myHero.Y, myHero.Width, myHero.Height);
          var transition = roomManager.TryTransition(currentHitBox);
-         
+
          if (transition is not null)
          {
-             // Перешли в новую комнату
-             myHero.X = transition.Value.X;
-             myHero.Y = transition.Value.Y;
-             camera.SnapTo(myHero.X, myHero.Y, myHero.Width, myHero.Height, roomManager.CurrentRoom.Width, roomManager.CurrentRoom.Height);
+            // Перешли в новую комнату
+            myHero.X = transition.Value.X;
+            myHero.Y = transition.Value.Y;
+            camera.SnapTo(myHero.X, myHero.Y, myHero.Width, myHero.Height, roomManager.CurrentRoom.Width, roomManager.CurrentRoom.Height);
          }
          else
          {
-             // Просто следим за игроком
-             camera.Follow(myHero.X, myHero.Y, myHero.Width, myHero.Height, roomManager.CurrentRoom.Width, roomManager.CurrentRoom.Height);
+            // Просто следим за игроком
+            camera.Follow(myHero.X, myHero.Y, myHero.Width, myHero.Height, roomManager.CurrentRoom.Width, roomManager.CurrentRoom.Height);
          }
 
+         Title = $"Player: {myHero.X:F0}; {myHero.Y:F0} | Mouse: {Inputmanager.MouseX:F0}; {Inputmanager.MouseY:F0}";
          CameraTransform.X = -camera.X;
          CameraTransform.Y = -camera.Y;
       }

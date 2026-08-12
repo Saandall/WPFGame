@@ -14,7 +14,7 @@ namespace WPFGame.PlayerLogic
       // ‘лаг нужен дл€ того чтобы после подн€ти€ на вершину лестницы герой 
       // не начал сразу же прыгать
       private bool preventAutoJump = false;
-
+      private int speed = 5;
       private int dropCooldown = 0;
 
       public Player(double startX, double startY)
@@ -67,13 +67,13 @@ namespace WPFGame.PlayerLogic
          {
             currentGravity = 0;
             VelocityY = 0;
-            if (goUp) Y -= 5;
-            if (goDown) Y += 5;
+            if (goUp) Y -= speed;
+            if (goDown) Y += speed;
          }
 
          // ƒвижение вбок
-         if (goLeft) X -= 5;
-         if (goRight) X += 5;
+         if (goLeft) X -= speed;
+         if (goRight) X += speed;
 
          // 4. Ѕј«ќ¬јя ‘»«» ј  ќЋЋ»«»… (»з Entity)
          base.UpdatePhysics(mapElements, currentGravity, canStandOnPlatforms);

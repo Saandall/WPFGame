@@ -134,7 +134,7 @@ namespace WPFGame.Core
             OnGround = true;
          }
 
-         
+
       }
 
       // Синхронизация математики с визуалом
