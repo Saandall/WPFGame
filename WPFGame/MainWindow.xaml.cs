@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using WPFGame.Core;
 using WPFGame.Enemies;
+using WPFGame.GameFlow;
 using WPFGame.Level;
 using WPFGame.PlayerLogic;
 using WPFGame.Projectiles;
@@ -30,8 +33,15 @@ namespace WPFGame
         private CameraController camera;
         private MiniMap miniMap;
 
+        private InteractionZone stationExitZone;
+        private InteractionPrompt interactionPrompt;
+        private Rectangle stationExitMarker;
+
         private const int GeneratedRoomCount =
             8;
+
+        private const double InteractionHoldDuration =
+            0.8;
 
         public MainWindow()
         {
@@ -77,6 +87,12 @@ namespace WPFGame
                 myHero.VisualShape,
                 ZLayer.Player);
 
+            CreateStationExitTest();
+
+            interactionPrompt =
+                new InteractionPrompt(
+                    Viewport);
+
             camera.SnapTo(
                 myHero.X,
                 myHero.Y,
@@ -114,7 +130,8 @@ namespace WPFGame
                 ZLayer.Enemies);
 
             gameTimer.Interval =
-                TimeSpan.FromMilliseconds(16);
+                TimeSpan.FromMilliseconds(
+                    16);
 
             gameTimer.Tick +=
                 GameTick;
@@ -172,6 +189,8 @@ namespace WPFGame
                 correctedPosition.Y;
 
             myHero.Draw();
+
+            UpdateStationExitTest();
 
             // Маркер миникарты следует за мировым положением игрока
             miniMap.Update(
@@ -243,6 +262,94 @@ namespace WPFGame
             }
 
             ApplyCamera();
+        }
+
+        // Создаёт временную точку выхода возле стартовой позиции игрока
+        private void CreateStationExitTest()
+        {
+            Rect bounds =
+                new Rect(
+                    roomManager.CurrentOriginX +
+                    50,
+
+                    roomManager.CurrentOriginY +
+                    RoomMetrics.FloorY -
+                    70,
+
+                    40,
+                    70);
+
+            stationExitZone =
+                new InteractionZone(
+                    bounds,
+                    "Удерживайте E, чтобы покинуть уровень",
+                    InteractionHoldDuration);
+
+            stationExitMarker =
+                new Rectangle
+                {
+                    Width =
+                        bounds.Width,
+
+                    Height =
+                        bounds.Height,
+
+                    Fill =
+                        Brushes.Goldenrod,
+
+                    Stroke =
+                        Brushes.White,
+
+                    StrokeThickness =
+                        2,
+
+                    Opacity =
+                        0.45,
+
+                    IsHitTestVisible =
+                        false
+                };
+
+            Canvas.SetLeft(
+                stationExitMarker,
+                bounds.Left);
+
+            Canvas.SetTop(
+                stationExitMarker,
+                bounds.Top);
+
+            Panel.SetZIndex(
+                stationExitMarker,
+                ZLayer.Tiles + 1);
+
+            GameArea.Children.Add(
+                stationExitMarker);
+        }
+
+        // Обновляет удержание E и показывает HUD-подсказку возле точки выхода
+        private void UpdateStationExitTest()
+        {
+            bool completed =
+                stationExitZone.Update(
+                    myHero.HitBox,
+                    Inputmanager.Interacting,
+                    gameTimer.Interval.TotalSeconds);
+
+            if (stationExitZone.IsPlayerInside)
+            {
+                interactionPrompt.Show(
+                    stationExitZone);
+            }
+            else
+            {
+                interactionPrompt.Hide();
+            }
+
+            if (completed)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    "[INTERACTION] Station exit completed.");
+            }
         }
 
         private void ApplyCamera()
