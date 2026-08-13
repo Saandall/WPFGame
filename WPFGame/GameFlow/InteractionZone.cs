@@ -6,6 +6,7 @@ namespace WPFGame.GameFlow
     public sealed class InteractionZone
     {
         private bool completedDuringCurrentStay;
+        private bool blockedUntilRelease;
 
         public Rect Bounds { get; }
 
@@ -78,6 +79,20 @@ namespace WPFGame.GameFlow
                 return false;
             }
 
+            if (blockedUntilRelease)
+            {
+                if (!isInteracting)
+                {
+                    blockedUntilRelease =
+                        false;
+                }
+
+                HoldProgress =
+                    0;
+
+                return false;
+            }
+
             if (completedDuringCurrentStay)
             {
                 return false;
@@ -119,10 +134,23 @@ namespace WPFGame.GameFlow
                 1);
         }
 
+        // Требует отпустить кнопку перед следующим удержанием
+        public void BlockUntilRelease()
+        {
+            blockedUntilRelease =
+                true;
+
+            HoldProgress =
+                0;
+        }
+
         // Полностью сбрасывает состояние зоны
         public void Reset()
         {
             IsPlayerInside =
+                false;
+
+            blockedUntilRelease =
                 false;
 
             ResetCurrentStay();

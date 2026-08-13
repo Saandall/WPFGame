@@ -175,8 +175,9 @@ namespace WPFGame
 
             if (completed)
             {
-                System.Diagnostics.Debug.WriteLine(
-                    "[INTERACTION] Train departure completed.");
+                StartNextStation();
+
+                return;
             }
 
             camera.Follow(
@@ -187,7 +188,29 @@ namespace WPFGame
                 trainScene.Bounds);
         }
 
-        // Сохраняет прежний игровой тик станции для подключения на следующем этапе
+        // Выгружает поезд и создаёт следующую процедурную станцию
+        private void StartNextStation()
+        {
+            interactionPrompt.Hide();
+
+            trainScene.Unload(
+                GameArea);
+
+            gameSession.StartStation();
+
+            LoadStationScene();
+
+            if (stationExitZone is not null)
+            {
+                // Та же зажатая E не должна сразу запускать новое взаимодействие
+                stationExitZone.BlockUntilRelease();
+            }
+
+            System.Diagnostics.Debug.WriteLine(
+                $"[GAME FLOW] Station {gameSession.StationNumber} started.");
+        }
+
+        // Обновляет процедурную станцию
         private void UpdateStationScene()
         {
             if (roomManager is null ||
@@ -292,7 +315,7 @@ namespace WPFGame
             }
         }
 
-        // Подготавливает процедурную станцию; на этом этапе метод ещё не вызывается
+        // Создаёт новую процедурную станцию и переносит в неё игрока
         private void LoadStationScene()
         {
             int levelSeed =
@@ -323,6 +346,8 @@ namespace WPFGame
 
             myHero.VelocityY =
                 0;
+
+            myHero.Draw();
 
             CreateStationExit();
 
