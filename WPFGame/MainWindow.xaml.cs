@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -35,7 +36,7 @@ namespace WPFGame
         private CameraController camera;
         private InteractionPrompt interactionPrompt;
 
-        // Поля станции пока сохраняются для следующего этапа Train -> Station
+        // Объекты процедурной станции существуют только пока активна Station
         private RoomManager? roomManager;
         private MiniMap? miniMap;
         private InteractionZone? stationExitZone;
@@ -246,7 +247,10 @@ namespace WPFGame
 
             myHero.Draw();
 
-            UpdateStationExit();
+            if (UpdateStationExit())
+            {
+                return;
+            }
 
             miniMap.Update(
                 roomManager.CurrentInstance,
@@ -441,12 +445,12 @@ namespace WPFGame
                 stationExitMarker);
         }
 
-        // Обновляет временную точку выхода станции
-        private void UpdateStationExit()
+        // Обновляет точку выхода и сообщает, была ли станция завершена
+        private bool UpdateStationExit()
         {
             if (stationExitZone is null)
             {
-                return;
+                return false;
             }
 
             bool completed =
@@ -465,11 +469,111 @@ namespace WPFGame
                 interactionPrompt.Hide();
             }
 
-            if (completed)
+            if (!completed)
             {
-                System.Diagnostics.Debug.WriteLine(
-                    "[INTERACTION] Station exit completed.");
+                return false;
             }
+
+            CompleteStation();
+
+            return true;
+        }
+
+        // Полностью выгружает процедурную станцию и возвращает игрока в поезд
+        private void CompleteStation()
+        {
+            interactionPrompt.Hide();
+
+            ClearStationScene();
+
+            gameSession.EnterTrain();
+
+            trainScene.Load(
+                GameArea);
+
+            myHero.X =
+                trainScene.PlayerSpawn.X;
+
+            myHero.Y =
+                trainScene.PlayerSpawn.Y;
+
+            myHero.VelocityY =
+                0;
+
+            myHero.Draw();
+
+            // Зажатая на выходе E не должна сразу активировать отправление поезда
+            trainScene.DepartureZone.BlockUntilRelease();
+
+            camera.SnapTo(
+                myHero.X,
+                myHero.Y,
+                myHero.Width,
+                myHero.Height,
+                trainScene.Bounds);
+
+            AmmoText.Visibility =
+                Visibility.Collapsed;
+
+            System.Diagnostics.Debug.WriteLine(
+                $"[GAME FLOW] Station {gameSession.StationNumber} completed. Returned to train.");
+        }
+
+        // Удаляет визуальные элементы и ссылки текущей процедурной станции
+        private void ClearStationScene()
+        {
+            stationExitZone?.Reset();
+
+            // Player живёт весь забег, поэтому со сцены удаляется всё, кроме него
+            for (int index =
+                     GameArea.Children.Count - 1;
+                 index >= 0;
+                 index--)
+            {
+                UIElement element =
+                    GameArea.Children[index];
+
+                if (ReferenceEquals(
+                        element,
+                        myHero.VisualShape))
+                {
+                    continue;
+                }
+
+                GameArea.Children.RemoveAt(
+                    index);
+            }
+
+            // MiniMap создаёт отдельную HUD-панель с этим ZIndex
+            UIElement? miniMapPanel =
+                Viewport.Children
+                    .OfType<UIElement>()
+                    .FirstOrDefault(
+                        element =>
+                            Panel.GetZIndex(
+                                element) ==
+                            ZLayer.Interface + 10);
+
+            if (miniMapPanel is not null)
+            {
+                Viewport.Children.Remove(
+                    miniMapPanel);
+            }
+
+            activeBullets.Clear();
+            activeEnemies.Clear();
+
+            stationExitMarker =
+                null;
+
+            stationExitZone =
+                null;
+
+            miniMap =
+                null;
+
+            roomManager =
+                null;
         }
 
         // Сохраняет существующего тестового противника только для процедурной станции
