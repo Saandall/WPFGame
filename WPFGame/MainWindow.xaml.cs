@@ -309,16 +309,8 @@ namespace WPFGame
                     GeneratedRoomCount,
                     InteractionHoldDuration);
 
-            myHero.X =
-                stationScene.PlayerSpawn.X;
-
-            myHero.Y =
-                stationScene.PlayerSpawn.Y;
-
-            myHero.VelocityY =
-                0;
-
-            myHero.Draw();
+            PlacePlayerAt(
+                stationScene.PlayerSpawn);
 
             camera.SnapTo(
                 myHero.X,
@@ -395,16 +387,8 @@ namespace WPFGame
             trainScene.Load(
                 GameArea);
 
-            myHero.X =
-                trainScene.PlayerSpawn.X;
-
-            myHero.Y =
-                trainScene.PlayerSpawn.Y;
-
-            myHero.VelocityY =
-                0;
-
-            myHero.Draw();
+            PlacePlayerAt(
+                trainScene.PlayerSpawn);
 
             // Зажатая на выходе E не должна сразу активировать отправление поезда
             trainScene.DepartureZone.BlockUntilRelease();
@@ -467,6 +451,22 @@ namespace WPFGame
             Panel.SetZIndex(
                 dummy.VisualShape,
                 ZLayer.Enemies);
+        }
+
+        // Помещает существующего игрока в spawn новой сцены
+        private void PlacePlayerAt(
+            Point position)
+        {
+            myHero.X =
+                position.X;
+
+            myHero.Y =
+                position.Y;
+
+            myHero.VelocityY =
+                0;
+
+            myHero.Draw();
         }
 
         // Показывает номер и seed только для активной процедурной станции
