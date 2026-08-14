@@ -11,7 +11,6 @@ namespace WPFGame.Level
         // первая и вторая двери
         public RoomDoorReference First { get; }
         public RoomDoorReference Second { get; }
-
         // фиксируем двери
         public RoomConnection(
             RoomDoorReference first,
@@ -26,15 +25,6 @@ namespace WPFGame.Level
             First = first;
             Second = second;
         }
-
-        // Проверяет принадлежность двери этой связи
-        public bool Contains(
-            RoomDoorReference endpoint)
-        {
-            return endpoint == First ||
-                   endpoint == Second;
-        }
-
         // Возвращает дверь на противоположной стороне связи
         public RoomDoorReference GetOther(
             RoomDoorReference endpoint)
@@ -43,7 +33,6 @@ namespace WPFGame.Level
             {
                 return Second;
             }
-
             if (endpoint == Second)
             {
                 return First;

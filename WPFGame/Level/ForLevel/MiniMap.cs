@@ -14,7 +14,15 @@ namespace WPFGame.Level
         private const double HeaderHeight = 24;
         private const double MapPadding = 10;
 
+        private const double RoomOutlineThickness = 1;
+        private const double DoorMarkerThickness = 1.5;
+        private const double DoorMarkerOpacity = 0.55;
+        private const double DoorMarkerInset = 2.5;
+        private const double DoorMarkerEndPadding = 2;
+
         private readonly LevelLayout level;
+        private readonly Canvas viewport;
+        private readonly Border panel;
         private readonly Canvas mapCanvas;
         private readonly Ellipse playerMarker;
 
@@ -53,7 +61,10 @@ namespace WPFGame.Level
                 throw new ArgumentNullException(
                     nameof(level));
 
-            var border =
+            this.viewport =
+                viewport;
+
+            panel =
                 CreateBorder();
 
             var grid =
@@ -75,25 +86,25 @@ namespace WPFGame.Level
             grid.Children.Add(
                 mapCanvas);
 
-            border.Child =
+            panel.Child =
                 grid;
 
             Canvas.SetLeft(
-                border,
+                panel,
                 viewport.Width -
                 PanelWidth -
                 12);
 
             Canvas.SetTop(
-                border,
+                panel,
                 12);
 
             Panel.SetZIndex(
-                border,
+                panel,
                 ZLayer.Interface + 10);
 
             viewport.Children.Add(
-                border);
+                panel);
 
             CalculateMapTransform();
             DrawRooms();
@@ -139,6 +150,13 @@ namespace WPFGame.Level
                 WorldToMapY(
                     playerCenterY) -
                 playerMarker.Height / 2);
+        }
+
+        // Удаляет миникарту из HUD при выгрузке уровня
+        public void Remove()
+        {
+            viewport.Children.Remove(
+                panel);
         }
 
         // Создаёт внешнюю рамку миникарты
@@ -329,7 +347,7 @@ namespace WPFGame.Level
                 mapScale;
         }
 
-        // Рисует фактически занятые блоки каждой комнаты
+        // Рисует комнату как единую область без линий между её соседними блоками
         private void DrawRooms()
         {
             foreach (var room in
@@ -338,8 +356,12 @@ namespace WPFGame.Level
                 var rectangles =
                     new List<Rectangle>();
 
+                var occupiedCells =
+                    room.GetOccupiedWorldCells()
+                        .ToList();
+
                 foreach (var cell in
-                         room.GetOccupiedWorldCells())
+                         occupiedCells)
                 {
                     var rectangle =
                         new Rectangle
@@ -358,12 +380,6 @@ namespace WPFGame.Level
 
                             Fill =
                                 normalRoomBrush,
-
-                            Stroke =
-                                Brushes.Gray,
-
-                            StrokeThickness =
-                                1,
 
                             IsHitTestVisible =
                                 false
@@ -394,13 +410,124 @@ namespace WPFGame.Level
                         rectangle);
                 }
 
+                DrawRoomOutline(
+                    occupiedCells);
+
                 roomCells.Add(
                     room.Id,
                     rectangles);
             }
         }
 
-        // Отмечает активные дверные проёмы комнат
+        // Рисует только те стороны блоков, которые выходят наружу комнаты
+        private void DrawRoomOutline(
+            IReadOnlyCollection<(int Col, int Row)> occupiedCells)
+        {
+            var occupiedSet =
+                occupiedCells.ToHashSet();
+
+            foreach (var cell in
+                     occupiedCells)
+            {
+                double left =
+                    WorldToMapX(
+                        cell.Col *
+                        RoomMetrics.CellWidth);
+
+                double right =
+                    WorldToMapX(
+                        (cell.Col + 1) *
+                        RoomMetrics.CellWidth);
+
+                double top =
+                    WorldToMapY(
+                        cell.Row *
+                        RoomMetrics.CellHeight);
+
+                double bottom =
+                    WorldToMapY(
+                        (cell.Row + 1) *
+                        RoomMetrics.CellHeight);
+
+                if (!occupiedSet.Contains(
+                        (cell.Col - 1, cell.Row)))
+                {
+                    AddRoomOutlineLine(
+                        left,
+                        top,
+                        left,
+                        bottom);
+                }
+
+                if (!occupiedSet.Contains(
+                        (cell.Col + 1, cell.Row)))
+                {
+                    AddRoomOutlineLine(
+                        right,
+                        top,
+                        right,
+                        bottom);
+                }
+
+                if (!occupiedSet.Contains(
+                        (cell.Col, cell.Row - 1)))
+                {
+                    AddRoomOutlineLine(
+                        left,
+                        top,
+                        right,
+                        top);
+                }
+
+                if (!occupiedSet.Contains(
+                        (cell.Col, cell.Row + 1)))
+                {
+                    AddRoomOutlineLine(
+                        left,
+                        bottom,
+                        right,
+                        bottom);
+                }
+            }
+        }
+
+        // Добавляет один внешний отрезок контура комнаты
+        private void AddRoomOutlineLine(
+            double x1,
+            double y1,
+            double x2,
+            double y2)
+        {
+            var line =
+                new Line
+                {
+                    X1 =
+                        x1,
+
+                    Y1 =
+                        y1,
+
+                    X2 =
+                        x2,
+
+                    Y2 =
+                        y2,
+
+                    Stroke =
+                        Brushes.Gray,
+
+                    StrokeThickness =
+                        RoomOutlineThickness,
+
+                    IsHitTestVisible =
+                        false
+                };
+
+            mapCanvas.Children.Add(
+                line);
+        }
+
+        // Помечает сторону конкретного блока, на которой находится активная дверь
         private void DrawDoors()
         {
             foreach (var room in
@@ -409,43 +536,140 @@ namespace WPFGame.Level
                 foreach (var door in
                          room.Template.Doors)
                 {
-                    Point center =
-                        GetDoorWorldCenter(
-                            room,
-                            door);
-
-                    var marker =
-                        new Ellipse
-                        {
-                            Width =
-                                4,
-
-                            Height =
-                                4,
-
-                            Fill =
-                                Brushes.LightGray,
-
-                            IsHitTestVisible =
-                                false
-                        };
-
-                    Canvas.SetLeft(
-                        marker,
-                        WorldToMapX(
-                            center.X) -
-                        marker.Width / 2);
-
-                    Canvas.SetTop(
-                        marker,
-                        WorldToMapY(
-                            center.Y) -
-                        marker.Height / 2);
-
-                    mapCanvas.Children.Add(
-                        marker);
+                    AddDoorSideMarker(
+                        room,
+                        door);
                 }
             }
+        }
+
+        // Рисует полупрозрачную линию вдоль стены блока с дверью
+        private void AddDoorSideMarker(
+            RoomInstance room,
+            DoorSlot door)
+        {
+            double cellWorldX =
+                room.OriginX +
+                door.CellCol *
+                RoomMetrics.CellWidth;
+
+            double cellWorldY =
+                room.OriginY +
+                door.CellRow *
+                RoomMetrics.CellHeight;
+
+            double left =
+                WorldToMapX(
+                    cellWorldX);
+
+            double right =
+                WorldToMapX(
+                    cellWorldX +
+                    RoomMetrics.CellWidth);
+
+            double top =
+                WorldToMapY(
+                    cellWorldY);
+
+            double bottom =
+                WorldToMapY(
+                    cellWorldY +
+                    RoomMetrics.CellHeight);
+
+            var marker =
+                new Line
+                {
+                    Stroke =
+                        Brushes.LightGray,
+
+                    StrokeThickness =
+                        DoorMarkerThickness,
+
+                    Opacity =
+                        DoorMarkerOpacity,
+
+                    IsHitTestVisible =
+                        false
+                };
+
+            switch (door.Direction)
+            {
+                case Direction.Left:
+                    marker.X1 =
+                        left +
+                        DoorMarkerInset;
+
+                    marker.X2 =
+                        marker.X1;
+
+                    marker.Y1 =
+                        top +
+                        DoorMarkerEndPadding;
+
+                    marker.Y2 =
+                        bottom -
+                        DoorMarkerEndPadding;
+                    break;
+
+                case Direction.Right:
+                    marker.X1 =
+                        right -
+                        DoorMarkerInset;
+
+                    marker.X2 =
+                        marker.X1;
+
+                    marker.Y1 =
+                        top +
+                        DoorMarkerEndPadding;
+
+                    marker.Y2 =
+                        bottom -
+                        DoorMarkerEndPadding;
+                    break;
+
+                case Direction.Top:
+                    marker.X1 =
+                        left +
+                        DoorMarkerEndPadding;
+
+                    marker.X2 =
+                        right -
+                        DoorMarkerEndPadding;
+
+                    marker.Y1 =
+                        top +
+                        DoorMarkerInset;
+
+                    marker.Y2 =
+                        marker.Y1;
+                    break;
+
+                case Direction.Bottom:
+                    marker.X1 =
+                        left +
+                        DoorMarkerEndPadding;
+
+                    marker.X2 =
+                        right -
+                        DoorMarkerEndPadding;
+
+                    marker.Y1 =
+                        bottom -
+                        DoorMarkerInset;
+
+                    marker.Y2 =
+                        marker.Y1;
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(
+                            door.Direction));
+            }
+
+            mapCanvas.Children.Add(
+                marker);
         }
 
         // Создаёт маркер центра игрока
@@ -510,72 +734,6 @@ namespace WPFGame.Level
 
             highlightedRoomId =
                 roomId;
-        }
-
-        // Возвращает мировой центр дверного проёма
-        private static Point GetDoorWorldCenter(
-            RoomInstance room,
-            DoorSlot door)
-        {
-            return door.Direction switch
-            {
-                Direction.Left =>
-                    new Point(
-                        room.OriginX +
-                        door.CellCol *
-                        RoomMetrics.CellWidth,
-
-                        room.OriginY +
-                        door.CellRow *
-                        RoomMetrics.CellHeight +
-                        RoomMetrics.FloorY -
-                        RoomMetrics.SideDoorHeight /
-                        2),
-
-                Direction.Right =>
-                    new Point(
-                        room.OriginX +
-                        (door.CellCol + 1) *
-                        RoomMetrics.CellWidth,
-
-                        room.OriginY +
-                        door.CellRow *
-                        RoomMetrics.CellHeight +
-                        RoomMetrics.FloorY -
-                        RoomMetrics.SideDoorHeight /
-                        2),
-
-                Direction.Top =>
-                    new Point(
-                        room.OriginX +
-                        door.CellCol *
-                        RoomMetrics.CellWidth +
-                        RoomMetrics.TopBottomDoorStartX +
-                        RoomMetrics.TopBottomDoorWidth /
-                        2,
-
-                        room.OriginY +
-                        door.CellRow *
-                        RoomMetrics.CellHeight),
-
-                Direction.Bottom =>
-                    new Point(
-                        room.OriginX +
-                        door.CellCol *
-                        RoomMetrics.CellWidth +
-                        RoomMetrics.TopBottomDoorStartX +
-                        RoomMetrics.TopBottomDoorWidth /
-                        2,
-
-                        room.OriginY +
-                        (door.CellRow + 1) *
-                        RoomMetrics.CellHeight),
-
-                _ =>
-                    throw new ArgumentOutOfRangeException(
-                        nameof(
-                            door.Direction))
-            };
         }
 
         // Переводит мировую X-координату в координату миникарты

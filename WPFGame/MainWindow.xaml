@@ -13,7 +13,6 @@
                 Width="960"
                 Height="540"
                 ClipToBounds="True">
-
             <Canvas Name="GameArea">
                 <Canvas.RenderTransform>
                     <TranslateTransform x:Name="CameraTransform"
@@ -30,6 +29,16 @@
                        Canvas.Left="20"
                        Canvas.Top="20"
                        Panel.ZIndex="100" />
+
+            <!-- Временная debug-информация текущей процедурной станции -->
+            <TextBlock Name="StationInfoText"
+                       FontSize="12"
+                       Foreground="LightGray"
+                       Opacity="0.72"
+                       Canvas.Left="8"
+                       Canvas.Bottom="6"
+                       Panel.ZIndex="100"
+                       Visibility="Collapsed" />
         </Canvas>
     </Viewbox>
 </Window>

@@ -11,6 +11,7 @@ namespace WPFGame.Level
 
         public const double FloorHeight = 80;
         public const double FloorY = CellHeight - FloorHeight;
+        public const double BoundaryThickness = 30;
 
         public const double SideDoorHeight = 70;
 

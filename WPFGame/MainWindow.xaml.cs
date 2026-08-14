@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using WPFGame.Core;
 using WPFGame.Enemies;
+using WPFGame.GameFlow;
 using WPFGame.Level;
 using WPFGame.PlayerLogic;
 using WPFGame.Projectiles;
@@ -24,55 +25,57 @@ namespace WPFGame
         private readonly List<Enemy> activeEnemies =
             new();
 
+        private readonly GameSession gameSession;
+        private readonly TrainScene trainScene;
+
         private Player myHero;
         private Weapon currentWeapon;
-        private RoomManager roomManager;
         private CameraController camera;
-        private MiniMap miniMap;
+        private InteractionPrompt interactionPrompt;
+        private StationScene? stationScene;
 
         private const int GeneratedRoomCount =
             8;
+
+        private const double InteractionHoldDuration =
+            0.8;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            int levelSeed =
-                Random.Shared.Next();
+            gameSession =
+                new GameSession();
 
-            LevelLayout level =
-                LevelGenerator.Generate(
-                    levelSeed,
-                    GeneratedRoomCount);
+            trainScene =
+                new TrainScene(
+                    InteractionHoldDuration);
 
-            roomManager =
-                new RoomManager(
-                    GameArea,
-                    level);
+            camera =
+                new CameraController(
+                    viewportWidth: 960,
+                    viewportHeight: 540,
+                    deadZoneWidth: 300,
+                    deadZoneHeight: 150);
 
-            // Миникарта отображает готовый LevelLayout и не зависит от камеры
-            miniMap =
-                new MiniMap(
-                    Viewport,
-                    level);
+            interactionPrompt =
+                new InteractionPrompt(
+                    Viewport);
 
-            camera = new CameraController(
-                viewportWidth: 960,
-                viewportHeight: 540,
-                deadZoneWidth: 300,
-                deadZoneHeight: 150);
+            currentWeapon =
+                new Pistol();
 
-            myHero = new Player(
-                roomManager.CurrentOriginX +
-                roomManager.CurrentRoom.PlayerStartX,
+            trainScene.Load(
+                GameArea);
 
-                roomManager.CurrentOriginY +
-                roomManager.CurrentRoom.PlayerStartY);
+            myHero =
+                new Player(
+                    trainScene.PlayerSpawn.X,
+                    trainScene.PlayerSpawn.Y);
 
             GameArea.Children.Add(
                 myHero.VisualShape);
 
-            // Игрок отображается поверх обычных тайлов и лестниц
             Panel.SetZIndex(
                 myHero.VisualShape,
                 ZLayer.Player);
@@ -82,39 +85,17 @@ namespace WPFGame
                 myHero.Y,
                 myHero.Width,
                 myHero.Height,
-                roomManager.CurrentBounds);
-
-            miniMap.Update(
-                roomManager.CurrentInstance,
-                myHero.X,
-                myHero.Y,
-                myHero.Width,
-                myHero.Height);
+                trainScene.Bounds);
 
             ApplyCamera();
 
-            currentWeapon =
-                new Pistol();
-
-            var dummy =
-                new Enemy(
-                    400,
-                    300,
-                    100);
-
-            activeEnemies.Add(
-                dummy);
-
-            GameArea.Children.Add(
-                dummy.VisualShape);
-
-            // Тестовый противник отображается поверх тайлов комнаты
-            Panel.SetZIndex(
-                dummy.VisualShape,
-                ZLayer.Enemies);
+            // В поезде боевой HUD пока не нужен
+            AmmoText.Visibility =
+                Visibility.Collapsed;
 
             gameTimer.Interval =
-                TimeSpan.FromMilliseconds(16);
+                TimeSpan.FromMilliseconds(
+                    16);
 
             gameTimer.Tick +=
                 GameTick;
@@ -144,20 +125,92 @@ namespace WPFGame
             object? sender,
             EventArgs e)
         {
-            // Сохраняет последнюю допустимую позицию перед движением
+            switch (gameSession.CurrentScene)
+            {
+                case GameSceneType.Train:
+                    UpdateTrainScene();
+                    break;
+
+                case GameSceneType.Station:
+                    UpdateStationScene();
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            ApplyCamera();
+        }
+
+        // Обновляет фиксированную сцену поезда
+        private void UpdateTrainScene()
+        {
+            myHero.Update(
+                GameArea.Children);
+
+            myHero.Draw();
+
+            if (UpdateInteraction(
+                    trainScene.DepartureZone))
+            {
+                StartNextStation();
+
+                return;
+            }
+
+            camera.Follow(
+                myHero.X,
+                myHero.Y,
+                myHero.Width,
+                myHero.Height,
+                trainScene.Bounds);
+        }
+
+        // Выгружает поезд и создаёт следующую процедурную станцию
+        private void StartNextStation()
+        {
+            interactionPrompt.Hide();
+
+            trainScene.Unload(
+                GameArea);
+
+            int levelSeed =
+                gameSession.StartStation();
+
+            LoadStationScene(
+                levelSeed);
+
+            UpdateStationInfo();
+
+            if (stationScene is not null)
+            {
+                // Та же зажатая E не должна сразу запускать новое взаимодействие
+                stationScene.ExitZone.BlockUntilRelease();
+            }
+
+            System.Diagnostics.Debug.WriteLine(
+                $"[GAME FLOW] Station {gameSession.StationNumber} started. Seed: {gameSession.CurrentSeed}.");
+        }
+
+        // Обновляет процедурную станцию
+        private void UpdateStationScene()
+        {
+            if (stationScene is null)
+            {
+                return;
+            }
+
             double previousPlayerX =
                 myHero.X;
 
             double previousPlayerY =
                 myHero.Y;
 
-            // Игрок сначала двигается обычной физикой
             myHero.Update(
                 GameArea.Children);
 
-            // Менеджер проверяет двери, границы и форму комнаты
             Point correctedPosition =
-                roomManager.UpdatePlayer(
+                stationScene.UpdatePlayer(
                     previousPlayerX,
                     previousPlayerY,
                     myHero.X,
@@ -173,15 +226,19 @@ namespace WPFGame
 
             myHero.Draw();
 
-            // Маркер миникарты следует за мировым положением игрока
-            miniMap.Update(
-                roomManager.CurrentInstance,
+            if (UpdateStationExit())
+            {
+                return;
+            }
+
+            stationScene.UpdateMiniMap(
                 myHero.X,
                 myHero.Y,
                 myHero.Width,
                 myHero.Height);
 
-            foreach (var enemy in activeEnemies)
+            foreach (var enemy in
+                     activeEnemies)
             {
                 enemy.UpdatePhysics(
                     GameArea.Children,
@@ -209,40 +266,227 @@ namespace WPFGame
                     activeBullets);
             }
 
-            // Предел полёта снарядов берётся из загруженной области уровня
             CombatManager.UpdateBulletsAndHits(
                 activeBullets,
                 activeEnemies,
                 GameArea,
-                roomManager.ActiveBounds.Right);
+                stationScene.ActiveBounds.Right);
 
             AmmoText.Text =
                 currentWeapon.IsReloading
                     ? "Перезарядка..."
                     : $"{currentWeapon.Ammo} / {currentWeapon.ReserveAmmo}";
 
-            if (roomManager.CurrentRoomChanged)
+            if (stationScene.CurrentRoomChanged)
             {
-                // После полного перехода камера сразу переключается на новую комнату
                 camera.SnapTo(
                     myHero.X,
                     myHero.Y,
                     myHero.Width,
                     myHero.Height,
-                    roomManager.CurrentBounds);
+                    stationScene.CurrentBounds);
             }
             else
             {
-                // До перехода камера остаётся ограничена текущей комнатой
                 camera.Follow(
                     myHero.X,
                     myHero.Y,
                     myHero.Width,
                     myHero.Height,
-                    roomManager.CurrentBounds);
+                    stationScene.CurrentBounds);
+            }
+        }
+
+        // Создаёт новую процедурную станцию и переносит в неё игрока
+        private void LoadStationScene(
+            int levelSeed)
+        {
+            stationScene =
+                new StationScene(
+                    GameArea,
+                    Viewport,
+                    levelSeed,
+                    GeneratedRoomCount,
+                    InteractionHoldDuration);
+
+            PlacePlayerAt(
+                stationScene.PlayerSpawn);
+
+            camera.SnapTo(
+                myHero.X,
+                myHero.Y,
+                myHero.Width,
+                myHero.Height,
+                stationScene.CurrentBounds);
+
+            stationScene.UpdateMiniMap(
+                myHero.X,
+                myHero.Y,
+                myHero.Width,
+                myHero.Height);
+
+            AmmoText.Visibility =
+                Visibility.Visible;
+
+            CreateStationTestEnemy();
+        }
+
+        // Обновляет точку выхода и сообщает, была ли станция завершена
+        private bool UpdateStationExit()
+        {
+            if (stationScene is null)
+            {
+                return false;
             }
 
-            ApplyCamera();
+            if (!UpdateInteraction(
+                    stationScene.ExitZone))
+            {
+                return false;
+            }
+
+            CompleteStation();
+
+            return true;
+        }
+
+        // Обновляет общую механику удержания клавиши в зоне взаимодействия
+        private bool UpdateInteraction(
+            InteractionZone zone)
+        {
+            bool completed =
+                zone.Update(
+                    myHero.HitBox,
+                    Inputmanager.Interacting,
+                    gameTimer.Interval.TotalSeconds);
+
+            if (zone.IsPlayerInside)
+            {
+                interactionPrompt.Show(
+                    zone);
+            }
+            else
+            {
+                interactionPrompt.Hide();
+            }
+
+            return completed;
+        }
+
+        // Полностью выгружает процедурную станцию и возвращает игрока в поезд
+        private void CompleteStation()
+        {
+            interactionPrompt.Hide();
+
+            ClearStationScene();
+
+            gameSession.EnterTrain();
+
+            UpdateStationInfo();
+
+            trainScene.Load(
+                GameArea);
+
+            PlacePlayerAt(
+                trainScene.PlayerSpawn);
+
+            // Зажатая на выходе E не должна сразу активировать отправление поезда
+            trainScene.DepartureZone.BlockUntilRelease();
+
+            camera.SnapTo(
+                myHero.X,
+                myHero.Y,
+                myHero.Width,
+                myHero.Height,
+                trainScene.Bounds);
+
+            AmmoText.Visibility =
+                Visibility.Collapsed;
+
+            System.Diagnostics.Debug.WriteLine(
+                $"[GAME FLOW] Station {gameSession.StationNumber} completed. Returned to train.");
+        }
+
+        // Удаляет станцию и временные combat-объекты
+        private void ClearStationScene()
+        {
+            stationScene?.Unload();
+
+            foreach (var enemy in
+                     activeEnemies)
+            {
+                GameArea.Children.Remove(
+                    enemy.VisualShape);
+            }
+
+            foreach (var bullet in
+                     activeBullets)
+            {
+                GameArea.Children.Remove(
+                    bullet.VisualShape);
+            }
+
+            activeBullets.Clear();
+            activeEnemies.Clear();
+
+            stationScene =
+                null;
+        }
+
+        // Сохраняет существующего тестового противника только для процедурной станции
+        private void CreateStationTestEnemy()
+        {
+            var dummy =
+                new Enemy(
+                    400,
+                    300,
+                    100);
+
+            activeEnemies.Add(
+                dummy);
+
+            GameArea.Children.Add(
+                dummy.VisualShape);
+
+            Panel.SetZIndex(
+                dummy.VisualShape,
+                ZLayer.Enemies);
+        }
+
+        // Помещает существующего игрока в spawn новой сцены
+        private void PlacePlayerAt(
+            Point position)
+        {
+            myHero.X =
+                position.X;
+
+            myHero.Y =
+                position.Y;
+
+            myHero.VelocityY =
+                0;
+
+            myHero.Draw();
+        }
+
+        // Показывает номер и seed только для активной процедурной станции
+        private void UpdateStationInfo()
+        {
+            if (gameSession.CurrentScene !=
+                    GameSceneType.Station ||
+                gameSession.CurrentSeed is null)
+            {
+                StationInfoText.Visibility =
+                    Visibility.Collapsed;
+
+                return;
+            }
+
+            StationInfoText.Text =
+                $"Station {gameSession.StationNumber} | Seed: {gameSession.CurrentSeed.Value}";
+
+            StationInfoText.Visibility =
+                Visibility.Visible;
         }
 
         private void ApplyCamera()

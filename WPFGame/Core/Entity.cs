@@ -1,150 +1,522 @@
 using System;
 using System.Linq;
-using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Shapes;
 
 namespace WPFGame.Core
 {
-   public abstract class Entity
-   {
-      // ¡‡ÁÓ‚˚Â ÙËÁË˜ÂÒÍËÂ Ò‚ÓÈÒÚ‚‡, Ó·˘ËÂ ‰Îˇ ‚ÒÂı
-      public double X { get; set; }
-      public double Y { get; set; }
-      public double Width { get; protected set; }
-      public double Height { get; protected set; }
-      public double VelocityY { get; set; }
+    public abstract class Entity
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
 
-      // —ÓÒÚÓˇÌËˇ, ÍÓÚÓ˚Â ÙËÁËÍ‡ ÓÚ‰‡ÂÚ Ì‡ÛÊÛ (Ì‡ÒÎÂ‰ÌËÍ‡Ï)
-      public bool OnGround { get; protected set; }
-      public bool TouchingLadder { get; protected set; }
+        public double Width { get; protected set; }
+        public double Height { get; protected set; }
 
-      // ƒÎˇ ÔÓÌËÏ‡ÌËÂ ‚Âı‡ ÎÂÒÚÌËˆ˚ (ËÌ‡˜Â „ÂÓÈ ·Û‰ÂÚ Ì‡ ÌÂÈ Ô˚„‡Ú¸
-      public double ActiveLadderTop { get; protected set; }
-      public double ActiveLadderBottom { get; protected set; }
+        public double VelocityY { get; set; }
 
-      // ¬ËÁÛ‡Î (ÔˇÏÓÛ„ÓÎ¸ÌËÍ), ÍÓÚÓ˚È WPF ËÒÛÂÚ Ì‡ ˝Í‡ÌÂ
-      public Rectangle VisualShape { get; protected set; }
+        public bool OnGround { get; protected set; }
+        public bool TouchingLadder { get; protected set; }
 
-      // ’ËÚ·ÓÍÒ „ÂÌÂËÛÂÚÒˇ Ì‡ ÎÂÚÛ
-      public Rect HitBox => new Rect(X, Y, Width, Height);
+        public double ActiveLadderTop { get; protected set; }
+        public double ActiveLadderBottom { get; protected set; }
 
-      // =========================================================
-      // “Œ“ —¿Ã€… Œ¡Ÿ»… ÷» À  ŒÀÀ»«»… » √–¿¬»“¿÷»»
-      // =========================================================
-      public virtual void UpdatePhysics(UIElementCollection mapElements, double gravity, bool canStandOnPlatforms)
-      {
-         VelocityY += gravity;
-         Y += VelocityY;
+        public Rectangle VisualShape { get; protected set; }
 
-         OnGround = false;
-         TouchingLadder = false;
-         double highestFloorY = double.MaxValue;
-         bool foundFloor = false;
-         double feetY = Y + Height;
+        public Rect HitBox =>
+            new Rect(
+                X,
+                Y,
+                Width,
+                Height);
 
-         // 1. œ–Œ¬≈– ¿  ŒÀÀ»«»…
-         foreach (var element in mapElements.OfType<Rectangle>())
-         {
-            Rect elementHitBox = new Rect(Canvas.GetLeft(element), Canvas.GetTop(element) == double.NaN ? 0 : Canvas.GetTop(element), element.Width, element.Height);
+        // –ü—Ä–∏–º–µ–Ω—è–µ—Ç —Å—Ç–∞—Ä—É—é –≤–µ—Ä—Ç–∏–∫–∞–ª—å–Ω—É—é —Ñ–∏–∑–∏–∫—É –∏ –¥–æ–ø–æ–ª–Ω–∏—Ç–µ–ª—å–Ω–æ —Ä–∞–∑—Ä–µ—à–∞–µ—Ç
+        // —Å—Ç–æ–ª–∫–Ω–æ–≤–µ–Ω–∏—è —Å–æ –≤—Å–µ–º–∏ —Å—Ç–æ—Ä–æ–Ω–∞–º–∏ Ground
+        public virtual void UpdatePhysics(
+            UIElementCollection mapElements,
+            double gravity,
+            bool canStandOnPlatforms,
+            double? previousX = null,
+            double? previousY = null)
+        {
+            double startX =
+                previousX ??
+                X;
 
-            if (this.HitBox.IntersectsWith(elementHitBox))
+            double startY =
+                previousY ??
+                Y;
+
+            // –ì–æ—Ä–∏–∑–æ–Ω—Ç–∞–ª—å–Ω–æ–µ –¥–≤–∏–∂–µ–Ω–∏–µ —É–∂–µ –≤—ã–ø–æ–ª–Ω–µ–Ω–æ –Ω–∞—Å–ª–µ–¥–Ω–∏–∫–æ–º.
+            // –ó–¥–µ—Å—å —Ç–æ–ª—å–∫–æ –∫–æ—Ä—Ä–µ–∫—Ç–∏—Ä—É–µ—Ç—Å—è –ø–µ—Ä–µ—Å–µ—á–µ–Ω–∏–µ —Å —Ç–≤—ë—Ä–¥–æ–π —Å—Ç–µ–Ω–æ–π.
+            ResolveHorizontalGroundCollision(
+                mapElements,
+                startX);
+
+            VelocityY +=
+                gravity;
+
+            Y +=
+                VelocityY;
+
+            OnGround =
+                false;
+
+            TouchingLadder =
+                false;
+
+            double highestFloorY =
+                double.MaxValue;
+
+            bool foundFloor =
+                false;
+
+            double lowestCeilingY =
+                double.MinValue;
+
+            bool foundCeiling =
+                false;
+
+            double previousFeetY =
+                startY +
+                Height;
+
+            double feetY =
+                Y +
+                Height;
+
+            foreach (var element in
+                     mapElements.OfType<Rectangle>())
             {
-               string tag = (string)element.Tag;
+                Rect elementHitBox =
+                    GetElementHitBox(
+                        element);
 
-               if (tag == "Ground")
-               {
-                  double floorY = Canvas.GetTop(element);
-                  if (VelocityY >= 0 && feetY >= floorY && Y < floorY)
-                  {
-                     if (floorY < highestFloorY) highestFloorY = floorY;
-                     foundFloor = true;
-                  }
-               }
-               else if (tag == "Platform")
-               {
-                  double platformTop = Canvas.GetTop(element);
-                  if (canStandOnPlatforms && VelocityY >= 0 && feetY >= platformTop && feetY <= platformTop + 15)
-                  {
-                     if (platformTop < highestFloorY) highestFloorY = platformTop;
-                     foundFloor = true;
-                  }
-               }
-               else if (tag == "Ladder")
-               {
-                  TouchingLadder = true;
-                  // «‡ÔÓÏËÌ‡ÂÏ ‚Âı Ë ÌËÁ ÎÂÒÚÌËˆ˚, ÍÓÚÓÓÈ ÍÓÒÌÛÎËÒ¸
-                  ActiveLadderTop = Canvas.GetTop(element);
-                  ActiveLadderBottom = ActiveLadderTop + element.Height;
-               }
-               // —ÚÛÔÂÌ˜‡Ú‡ˇ ÎÂÒÚÌËˆ‡ /
-               else if ((string)element.Tag == "SlopeUpRight")
-               {
-                  double slopeLeft = Canvas.GetLeft(element);
-                  double slopeWidth = element.Width;
-                  double slopeHeight = element.Height;
-                  double slopeBottom = Canvas.GetTop(element) + slopeHeight;
+                string? tag =
+                    element.Tag as string;
 
-                  // —˜ËÚ‡ÂÏ Ô‡‚˚È Í‡È Ë„ÓÍ‡ ÔÓ X
-                  double targetX = X + Width;
-                  double progress = (targetX - slopeLeft) / slopeWidth;
+                if (tag == "Ground")
+                {
+                    // –í–µ—Ä—Ö–Ω—è—è —Å—Ç–æ—Ä–æ–Ω–∞ Ground —Ä–∞–±–æ—Ç–∞–µ—Ç –∫–∞–∫ –æ–±—ã—á–Ω—ã–π –ø–æ–ª.
+                    if (VelocityY >= 0 &&
+                        HorizontallyOverlaps(
+                            HitBox,
+                            elementHitBox) &&
+                        previousFeetY <=
+                            elementHitBox.Top + 0.1 &&
+                        feetY >=
+                            elementHitBox.Top)
+                    {
+                        highestFloorY =
+                            Math.Min(
+                                highestFloorY,
+                                elementHitBox.Top);
 
-                  progress = Math.Max(0, Math.Min(1, progress)); // «‡˘ËÚ‡ ÓÚ ‚˚ıÓ‰‡ Á‡ ‡ÏÍË
+                        foundFloor =
+                            true;
+                    }
 
-                  double currentFloorY = slopeBottom - (progress * slopeHeight);
+                    // –ù–∏–∂–Ω—è—è —Å—Ç–æ—Ä–æ–Ω–∞ —Ç–æ–≥–æ –∂–µ Ground —Ä–∞–±–æ—Ç–∞–µ—Ç –∫–∞–∫ –ø–æ—Ç–æ–ª–æ–∫.
+                    if (VelocityY < 0 &&
+                        HorizontallyOverlaps(
+                            HitBox,
+                            elementHitBox) &&
+                        startY >=
+                            elementHitBox.Bottom - 0.1 &&
+                        Y <=
+                            elementHitBox.Bottom)
+                    {
+                        lowestCeilingY =
+                            Math.Max(
+                                lowestCeilingY,
+                                elementHitBox.Bottom);
 
-                  // œÓ‚ÂˇÂÏ: Ô‡‰‡ÂÏ ÎË Ï˚, Ë Ì‡ıÓ‰ˇÚÒˇ ÎË Ì‡¯Ë ÌÓ„Ë ˇ‰ÓÏ Ò ‰Ë‡„ÓÌ‡Î¸˛ (‰ÓÔÛÒÍ 20 ÔËÍÒÂÎÂÈ)
-                  if (canStandOnPlatforms && VelocityY >= 0 && feetY >= currentFloorY - 15 && feetY <= currentFloorY + 20)
-                  {
-                     if (currentFloorY < highestFloorY) highestFloorY = currentFloorY;
-                     foundFloor = true;
-                  }
-               }
-               // —ÚÛÔÂÌ˜‡Ú‡ˇ ÎÂÒÚÌËˆ‡ \
-               else if ((string)element.Tag == "SlopeUpLeft")
-               {
-                  double slopeLeft = Canvas.GetLeft(element);
-                  double slopeTop = Canvas.GetTop(element);
-                  double slopeWidth = element.Width;
-                  double slopeHeight = element.Height;
-                  double slopeBottom = slopeTop + slopeHeight;
+                        foundCeiling =
+                            true;
+                    }
 
-                  double targetX = X;
-                  double progress = (targetX - slopeLeft) / slopeWidth;
-                  progress = Math.Max(0, Math.Min(1, progress));
+                    continue;
+                }
 
-                  // Ã‡ÚÂÏ‡ÚËÍ‡ »Õ¿ﬂ: ÔÓÎ Ì‡˜ËÌ‡ÂÚÒˇ ‚‚ÂıÛ (slopeTop) Ë ÒÔÛÒÍ‡ÂÚÒˇ Í ÌËÁÛ (slopeBottom)
-                  double currentFloorY = slopeTop + (progress * slopeHeight);
+                if (!HitBox.IntersectsWith(
+                        elementHitBox))
+                {
+                    continue;
+                }
 
-                  if (canStandOnPlatforms && VelocityY >= 0 && feetY >= currentFloorY - 15 && feetY <= currentFloorY + 20)
-                  {
-                     if (currentFloorY < highestFloorY) highestFloorY = currentFloorY;
-                     foundFloor = true;
-                  }
-               }
+                if (tag == "Platform")
+                {
+                    double platformTop =
+                        elementHitBox.Top;
+
+                    // –ü–ª–∞—Ç—Ñ–æ—Ä–º–∞ –æ—Å—Ç–∞—ë—Ç—Å—è –æ–¥–Ω–æ—Å—Ç–æ—Ä–æ–Ω–Ω–µ–π.
+                    if (canStandOnPlatforms &&
+                        VelocityY >= 0 &&
+                        previousFeetY <=
+                            platformTop + 0.1 &&
+                        feetY >=
+                            platformTop &&
+                        feetY <=
+                            platformTop + 15)
+                    {
+                        highestFloorY =
+                            Math.Min(
+                                highestFloorY,
+                                platformTop);
+
+                        foundFloor =
+                            true;
+                    }
+                }
+                else if (tag == "Ladder")
+                {
+                    TouchingLadder =
+                        true;
+
+                    // –ï—Å–ª–∏ –ª–µ—Å—Ç–Ω–∏—Ü–∞ —Å–æ—Å—Ç–æ–∏—Ç –∏–∑ –Ω–µ—Å–∫–æ–ª—å–∫–∏—Ö —Å–µ–≥–º–µ–Ω—Ç–æ–≤,
+                    // —Å–æ—Ö—Ä–∞–Ω—è–µ—Ç—Å—è –æ–±—â–∏–π –≤–µ—Ä—Ç–∏–∫–∞–ª—å–Ω—ã–π –¥–∏–∞–ø–∞–∑–æ–Ω.
+                    if (ActiveLadderTop == 0 &&
+                        ActiveLadderBottom == 0)
+                    {
+                        ActiveLadderTop =
+                            elementHitBox.Top;
+
+                        ActiveLadderBottom =
+                            elementHitBox.Bottom;
+                    }
+                    else
+                    {
+                        ActiveLadderTop =
+                            Math.Min(
+                                ActiveLadderTop,
+                                elementHitBox.Top);
+
+                        ActiveLadderBottom =
+                            Math.Max(
+                                ActiveLadderBottom,
+                                elementHitBox.Bottom);
+                    }
+                }
+                else if (tag ==
+                         "SlopeUpRight")
+                {
+                    double slopeLeft =
+                        elementHitBox.Left;
+
+                    double slopeWidth =
+                        element.Width;
+
+                    double slopeHeight =
+                        element.Height;
+
+                    double slopeBottom =
+                        elementHitBox.Bottom;
+
+                    double targetX =
+                        X +
+                        Width;
+
+                    double progress =
+                        (targetX -
+                         slopeLeft) /
+                        slopeWidth;
+
+                    progress =
+                        Math.Clamp(
+                            progress,
+                            0,
+                            1);
+
+                    double currentFloorY =
+                        slopeBottom -
+                        progress *
+                        slopeHeight;
+
+                    if (canStandOnPlatforms &&
+                        VelocityY >= 0 &&
+                        feetY >=
+                            currentFloorY - 15 &&
+                        feetY <=
+                            currentFloorY + 20)
+                    {
+                        highestFloorY =
+                            Math.Min(
+                                highestFloorY,
+                                currentFloorY);
+
+                        foundFloor =
+                            true;
+                    }
+                }
+                else if (tag ==
+                         "SlopeUpLeft")
+                {
+                    double slopeLeft =
+                        elementHitBox.Left;
+
+                    double slopeTop =
+                        elementHitBox.Top;
+
+                    double slopeWidth =
+                        element.Width;
+
+                    double slopeHeight =
+                        element.Height;
+
+                    double targetX =
+                        X;
+
+                    double progress =
+                        (targetX -
+                         slopeLeft) /
+                        slopeWidth;
+
+                    progress =
+                        Math.Clamp(
+                            progress,
+                            0,
+                            1);
+
+                    double currentFloorY =
+                        slopeTop +
+                        progress *
+                        slopeHeight;
+
+                    if (canStandOnPlatforms &&
+                        VelocityY >= 0 &&
+                        feetY >=
+                            currentFloorY - 15 &&
+                        feetY <=
+                            currentFloorY + 20)
+                    {
+                        highestFloorY =
+                            Math.Min(
+                                highestFloorY,
+                                currentFloorY);
+
+                        foundFloor =
+                            true;
+                    }
+                }
             }
 
-         }
-         // 2. œ–»Ã≈Õ≈Õ»≈ œŒÀ¿
-         if (foundFloor)
-         {
-            Y = highestFloorY - Height;
-            VelocityY = 0;
-            OnGround = true;
-         }
+            if (foundCeiling)
+            {
+                Y =
+                    lowestCeilingY;
 
-         
-      }
+                VelocityY =
+                    0;
+            }
+            else if (foundFloor)
+            {
+                Y =
+                    highestFloorY -
+                    Height;
 
-      // —ËÌıÓÌËÁ‡ˆËˇ Ï‡ÚÂÏ‡ÚËÍË Ò ‚ËÁÛ‡ÎÓÏ
-      public void Draw()
-      {
-         if (VisualShape != null)
-         {
-            Canvas.SetLeft(VisualShape, X);
-            Canvas.SetTop(VisualShape, Y);
-         }
-      }
-   }
+                VelocityY =
+                    0;
+
+                OnGround =
+                    true;
+            }
+
+            if (!TouchingLadder)
+            {
+                ActiveLadderTop =
+                    0;
+
+                ActiveLadderBottom =
+                    0;
+            }
+        }
+
+        // –ë–ª–æ–∫–∏—Ä—É–µ—Ç –ø–µ—Ä–µ—Å–µ—á–µ–Ω–∏–µ –≤–µ—Ä—Ç–∏–∫–∞–ª—å–Ω–æ–π —Å—Ç–æ—Ä–æ–Ω—ã Ground,
+        // –Ω–µ —Å—á–∏—Ç–∞—è –æ–±—ã—á–Ω—ã–π –ø–æ–ª —Å—Ç–µ–Ω–æ–π
+        private void ResolveHorizontalGroundCollision(
+            UIElementCollection mapElements,
+            double previousX)
+        {
+            double movementX =
+                X -
+                previousX;
+
+            if (Math.Abs(
+                    movementX) <
+                0.001)
+            {
+                return;
+            }
+
+            Rect currentHitBox =
+                HitBox;
+
+            double correctedX =
+                X;
+
+            bool foundWall =
+                false;
+
+            foreach (var element in
+                     mapElements.OfType<Rectangle>())
+            {
+                if (element.Tag as string !=
+                    "Ground")
+                {
+                    continue;
+                }
+
+                Rect tileHitBox =
+                    GetElementHitBox(
+                        element);
+
+                // –í–∞–∂–Ω—ã–π –º–æ–º–µ–Ω—Ç:
+                // –∫–æ–≥–¥–∞ –∏–≥—Ä–æ–∫ –ø—Ä–æ—Å—Ç–æ —Å—Ç–æ–∏—Ç –ù–ê –ø–æ–ª—É, –¥–∏–∞–ø–∞–∑–æ–Ω—ã –ø–æ Y
+                // —Ç–æ–ª—å–∫–æ –∫–∞—Å–∞—é—Ç—Å—è –≥—Ä–∞–Ω–∏—Ü–µ–π –∏ –ø–æ–ª –Ω–µ —Å—á–∏—Ç–∞–µ—Ç—Å—è —Å—Ç–µ–Ω–æ–π.
+                if (!VerticallyOverlaps(
+                        currentHitBox,
+                        tileHitBox))
+                {
+                    continue;
+                }
+
+                if (movementX > 0)
+                {
+                    double previousRight =
+                        previousX +
+                        Width;
+
+                    double currentRight =
+                        X +
+                        Width;
+
+                    if (previousRight <=
+                            tileHitBox.Left + 0.1 &&
+                        currentRight >=
+                            tileHitBox.Left)
+                    {
+                        double candidateX =
+                            tileHitBox.Left -
+                            Width;
+
+                        correctedX =
+                            foundWall
+                                ? Math.Min(
+                                    correctedX,
+                                    candidateX)
+                                : candidateX;
+
+                        foundWall =
+                            true;
+                    }
+                }
+                else
+                {
+                    double previousLeft =
+                        previousX;
+
+                    double currentLeft =
+                        X;
+
+                    if (previousLeft >=
+                            tileHitBox.Right - 0.1 &&
+                        currentLeft <=
+                            tileHitBox.Right)
+                    {
+                        double candidateX =
+                            tileHitBox.Right;
+
+                        correctedX =
+                            foundWall
+                                ? Math.Max(
+                                    correctedX,
+                                    candidateX)
+                                : candidateX;
+
+                        foundWall =
+                            true;
+                    }
+                }
+            }
+
+            if (foundWall)
+            {
+                X =
+                    correctedX;
+            }
+        }
+
+        // –í–æ–∑–≤—Ä–∞—â–∞–µ—Ç –º–∏—Ä–æ–≤—É—é –≥–µ–æ–º–µ—Ç—Ä–∏—é WPF-—Ç–∞–π–ª–∞
+        private static Rect GetElementHitBox(
+            Rectangle element)
+        {
+            double left =
+                Canvas.GetLeft(
+                    element);
+
+            double top =
+                Canvas.GetTop(
+                    element);
+
+            if (double.IsNaN(
+                    left))
+            {
+                left =
+                    0;
+            }
+
+            if (double.IsNaN(
+                    top))
+            {
+                top =
+                    0;
+            }
+
+            return new Rect(
+                left,
+                top,
+                element.Width,
+                element.Height);
+        }
+
+        // –ü—Ä–æ–≤–µ—Ä—è–µ—Ç –ø–µ—Ä–µ—Å–µ—á–µ–Ω–∏–µ –ø–æ –≥–æ—Ä–∏–∑–æ–Ω—Ç–∞–ª—å–Ω–æ–π –æ—Å–∏ —Å –Ω–µ–Ω—É–ª–µ–≤–æ–π —à–∏—Ä–∏–Ω–æ–π
+        private static bool HorizontallyOverlaps(
+            Rect first,
+            Rect second)
+        {
+            return first.Right >
+                       second.Left + 0.1 &&
+                   first.Left <
+                       second.Right - 0.1;
+        }
+
+        // –ü—Ä–æ–≤–µ—Ä—è–µ—Ç –ø–µ—Ä–µ—Å–µ—á–µ–Ω–∏–µ –ø–æ –≤–µ—Ä—Ç–∏–∫–∞–ª—å–Ω–æ–π –æ—Å–∏ —Å –Ω–µ–Ω—É–ª–µ–≤–æ–π –≤—ã—Å–æ—Ç–æ–π
+        private static bool VerticallyOverlaps(
+            Rect first,
+            Rect second)
+        {
+            return first.Bottom >
+                       second.Top + 0.1 &&
+                   first.Top <
+                       second.Bottom - 0.1;
+        }
+
+        // –°–∏–Ω—Ö—Ä–æ–Ω–∏–∑–∏—Ä—É–µ—Ç –º–∏—Ä–æ–≤—ã–µ –∫–æ–æ—Ä–¥–∏–Ω–∞—Ç—ã —Å—É—â–Ω–æ—Å—Ç–∏ —Å WPF-–æ–±—ä–µ–∫—Ç–æ–º
+        public void Draw()
+        {
+            if (VisualShape is null)
+            {
+                return;
+            }
+
+            Canvas.SetLeft(
+                VisualShape,
+                X);
+
+            Canvas.SetTop(
+                VisualShape,
+                Y);
+        }
+    }
 }

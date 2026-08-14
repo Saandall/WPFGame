@@ -4,6 +4,7 @@ namespace WPFGame.Level
     public static class RoomLayoutRules
     {
         public const double LadderWidth = 40;
+        public const double PlatformHeight = 20;
 
         // Лестница к верхнему или нижнему проходу ставится по центру блока
         public static double GetCenteredLadderX(
