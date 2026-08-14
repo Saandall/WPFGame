@@ -7,18 +7,13 @@ namespace WPFGame.Level
 
         private readonly Dictionary<RoomDoorReference, RoomConnection> connectionsByDoor = new();
 
-        private readonly List<RoomConnection> connections = new();
-
         private readonly HashSet<(int Col, int Row)> occupiedWorldCells = new();
 
         private RoomInstance? startRoom;
 
-        // можно читать извне какие комнаты и связи существуют
+        // Позволяет читать размещённые комнаты извне
         public IReadOnlyCollection<RoomInstance> Rooms =>
             rooms.Values;
-
-        public IReadOnlyList<RoomConnection> Connections =>
-            connections;
 
         // на случай если попытаться получить стартовую комнату до начала уровня
         public RoomInstance StartRoom =>
@@ -178,9 +173,6 @@ namespace WPFGame.Level
                 new RoomConnection(
                     firstReference,
                     secondReference);
-
-            connections.Add(
-                connection);
 
             connectionsByDoor.Add(
                 firstReference,
