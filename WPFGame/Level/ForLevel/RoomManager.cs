@@ -40,9 +40,6 @@ namespace WPFGame.Level
             private set;
         }
 
-        public bool HasPendingRoom =>
-            pendingRoom is not null;
-
         public Rect CurrentBounds =>
             new(
                 CurrentOriginX,
