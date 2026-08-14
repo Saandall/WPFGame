@@ -150,23 +150,8 @@ namespace WPFGame
 
             myHero.Draw();
 
-            bool completed =
-                trainScene.DepartureZone.Update(
-                    myHero.HitBox,
-                    Inputmanager.Interacting,
-                    gameTimer.Interval.TotalSeconds);
-
-            if (trainScene.DepartureZone.IsPlayerInside)
-            {
-                interactionPrompt.Show(
-                    trainScene.DepartureZone);
-            }
-            else
-            {
-                interactionPrompt.Hide();
-            }
-
-            if (completed)
+            if (UpdateInteraction(
+                    trainScene.DepartureZone))
             {
                 StartNextStation();
 
@@ -362,26 +347,8 @@ namespace WPFGame
                 return false;
             }
 
-            InteractionZone exitZone =
-                stationScene.ExitZone;
-
-            bool completed =
-                exitZone.Update(
-                    myHero.HitBox,
-                    Inputmanager.Interacting,
-                    gameTimer.Interval.TotalSeconds);
-
-            if (exitZone.IsPlayerInside)
-            {
-                interactionPrompt.Show(
-                    exitZone);
-            }
-            else
-            {
-                interactionPrompt.Hide();
-            }
-
-            if (!completed)
+            if (!UpdateInteraction(
+                    stationScene.ExitZone))
             {
                 return false;
             }
@@ -389,6 +356,29 @@ namespace WPFGame
             CompleteStation();
 
             return true;
+        }
+
+        // Обновляет общую механику удержания клавиши в зоне взаимодействия
+        private bool UpdateInteraction(
+            InteractionZone zone)
+        {
+            bool completed =
+                zone.Update(
+                    myHero.HitBox,
+                    Inputmanager.Interacting,
+                    gameTimer.Interval.TotalSeconds);
+
+            if (zone.IsPlayerInside)
+            {
+                interactionPrompt.Show(
+                    zone);
+            }
+            else
+            {
+                interactionPrompt.Hide();
+            }
+
+            return completed;
         }
 
         // Полностью выгружает процедурную станцию и возвращает игрока в поезд
