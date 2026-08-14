@@ -11,7 +11,6 @@ namespace WPFGame.GameFlow
         private const double PanelWidth = 380;
         private const double PanelHeight = 72;
 
-        private readonly Canvas viewport;
         private readonly Border panel;
         private readonly TextBlock promptText;
         private readonly ProgressBar progressBar;
@@ -19,10 +18,8 @@ namespace WPFGame.GameFlow
         public InteractionPrompt(
             Canvas viewport)
         {
-            this.viewport =
-                viewport ??
-                throw new ArgumentNullException(
-                    nameof(viewport));
+            ArgumentNullException.ThrowIfNull(
+                viewport);
 
             promptText =
                 new TextBlock
@@ -167,11 +164,5 @@ namespace WPFGame.GameFlow
                 0;
         }
 
-        // Удаляет HUD-элемент из Viewport при смене игровой сцены
-        public void Remove()
-        {
-            viewport.Children.Remove(
-                panel);
-        }
     }
 }
