@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using WPFGame.Core;
 using WPFGame.Enemies;
@@ -35,12 +32,7 @@ namespace WPFGame
         private Weapon currentWeapon;
         private CameraController camera;
         private InteractionPrompt interactionPrompt;
-
-        // Объекты процедурной станции существуют только пока активна Station
-        private RoomManager? roomManager;
-        private MiniMap? miniMap;
-        private InteractionZone? stationExitZone;
-        private Rectangle? stationExitMarker;
+        private StationScene? stationScene;
 
         private const int GeneratedRoomCount =
             8;
@@ -205,10 +197,10 @@ namespace WPFGame
 
             UpdateStationInfo();
 
-            if (stationExitZone is not null)
+            if (stationScene is not null)
             {
                 // Та же зажатая E не должна сразу запускать новое взаимодействие
-                stationExitZone.BlockUntilRelease();
+                stationScene.ExitZone.BlockUntilRelease();
             }
 
             System.Diagnostics.Debug.WriteLine(
@@ -218,9 +210,7 @@ namespace WPFGame
         // Обновляет процедурную станцию
         private void UpdateStationScene()
         {
-            if (roomManager is null ||
-                miniMap is null ||
-                stationExitZone is null)
+            if (stationScene is null)
             {
                 return;
             }
@@ -235,7 +225,7 @@ namespace WPFGame
                 GameArea.Children);
 
             Point correctedPosition =
-                roomManager.UpdatePlayer(
+                stationScene.UpdatePlayer(
                     previousPlayerX,
                     previousPlayerY,
                     myHero.X,
@@ -256,8 +246,7 @@ namespace WPFGame
                 return;
             }
 
-            miniMap.Update(
-                roomManager.CurrentInstance,
+            stationScene.UpdateMiniMap(
                 myHero.X,
                 myHero.Y,
                 myHero.Width,
@@ -296,21 +285,21 @@ namespace WPFGame
                 activeBullets,
                 activeEnemies,
                 GameArea,
-                roomManager.ActiveBounds.Right);
+                stationScene.ActiveBounds.Right);
 
             AmmoText.Text =
                 currentWeapon.IsReloading
                     ? "Перезарядка..."
                     : $"{currentWeapon.Ammo} / {currentWeapon.ReserveAmmo}";
 
-            if (roomManager.CurrentRoomChanged)
+            if (stationScene.CurrentRoomChanged)
             {
                 camera.SnapTo(
                     myHero.X,
                     myHero.Y,
                     myHero.Width,
                     myHero.Height,
-                    roomManager.CurrentBounds);
+                    stationScene.CurrentBounds);
             }
             else
             {
@@ -319,7 +308,7 @@ namespace WPFGame
                     myHero.Y,
                     myHero.Width,
                     myHero.Height,
-                    roomManager.CurrentBounds);
+                    stationScene.CurrentBounds);
             }
         }
 
@@ -327,45 +316,33 @@ namespace WPFGame
         private void LoadStationScene(
             int levelSeed)
         {
-            LevelLayout level =
-                LevelGenerator.Generate(
-                    levelSeed,
-                    GeneratedRoomCount);
-
-            roomManager =
-                new RoomManager(
+            stationScene =
+                new StationScene(
                     GameArea,
-                    level);
-
-            miniMap =
-                new MiniMap(
                     Viewport,
-                    level);
+                    levelSeed,
+                    GeneratedRoomCount,
+                    InteractionHoldDuration);
 
             myHero.X =
-                roomManager.CurrentOriginX +
-                roomManager.CurrentRoom.PlayerStartX;
+                stationScene.PlayerSpawn.X;
 
             myHero.Y =
-                roomManager.CurrentOriginY +
-                roomManager.CurrentRoom.PlayerStartY;
+                stationScene.PlayerSpawn.Y;
 
             myHero.VelocityY =
                 0;
 
             myHero.Draw();
 
-            CreateStationExit();
-
             camera.SnapTo(
                 myHero.X,
                 myHero.Y,
                 myHero.Width,
                 myHero.Height,
-                roomManager.CurrentBounds);
+                stationScene.CurrentBounds);
 
-            miniMap.Update(
-                roomManager.CurrentInstance,
+            stationScene.UpdateMiniMap(
                 myHero.X,
                 myHero.Y,
                 myHero.Width,
@@ -377,94 +354,27 @@ namespace WPFGame
             CreateStationTestEnemy();
         }
 
-        // Создаёт временную точку возврата возле spawn стартовой комнаты
-        private void CreateStationExit()
-        {
-            if (roomManager is null)
-            {
-                return;
-            }
-
-            Rect bounds =
-                new Rect(
-                    roomManager.CurrentOriginX +
-                    50,
-
-                    roomManager.CurrentOriginY +
-                    RoomMetrics.FloorY -
-                    70,
-
-                    40,
-                    70);
-
-            stationExitZone =
-                new InteractionZone(
-                    bounds,
-                    "Удерживайте E, чтобы покинуть уровень",
-                    InteractionHoldDuration);
-
-            stationExitMarker =
-                new Rectangle
-                {
-                    Width =
-                        bounds.Width,
-
-                    Height =
-                        bounds.Height,
-
-                    Fill =
-                        Brushes.Goldenrod,
-
-                    Stroke =
-                        Brushes.White,
-
-                    StrokeThickness =
-                        2,
-
-                    Opacity =
-                        0.45,
-
-                    IsHitTestVisible =
-                        false,
-
-                    Tag =
-                        "InteractionMarker"
-                };
-
-            Canvas.SetLeft(
-                stationExitMarker,
-                bounds.Left);
-
-            Canvas.SetTop(
-                stationExitMarker,
-                bounds.Top);
-
-            Panel.SetZIndex(
-                stationExitMarker,
-                ZLayer.Tiles + 1);
-
-            GameArea.Children.Add(
-                stationExitMarker);
-        }
-
         // Обновляет точку выхода и сообщает, была ли станция завершена
         private bool UpdateStationExit()
         {
-            if (stationExitZone is null)
+            if (stationScene is null)
             {
                 return false;
             }
 
+            InteractionZone exitZone =
+                stationScene.ExitZone;
+
             bool completed =
-                stationExitZone.Update(
+                exitZone.Update(
                     myHero.HitBox,
                     Inputmanager.Interacting,
                     gameTimer.Interval.TotalSeconds);
 
-            if (stationExitZone.IsPlayerInside)
+            if (exitZone.IsPlayerInside)
             {
                 interactionPrompt.Show(
-                    stationExitZone);
+                    exitZone);
             }
             else
             {
@@ -523,60 +433,29 @@ namespace WPFGame
                 $"[GAME FLOW] Station {gameSession.StationNumber} completed. Returned to train.");
         }
 
-        // Удаляет визуальные элементы и ссылки текущей процедурной станции
+        // Удаляет станцию и временные combat-объекты
         private void ClearStationScene()
         {
-            stationExitZone?.Reset();
+            stationScene?.Unload();
 
-            // Player живёт весь забег, поэтому со сцены удаляется всё, кроме него
-            for (int index =
-                     GameArea.Children.Count - 1;
-                 index >= 0;
-                 index--)
+            foreach (var enemy in
+                     activeEnemies)
             {
-                UIElement element =
-                    GameArea.Children[index];
-
-                if (ReferenceEquals(
-                        element,
-                        myHero.VisualShape))
-                {
-                    continue;
-                }
-
-                GameArea.Children.RemoveAt(
-                    index);
+                GameArea.Children.Remove(
+                    enemy.VisualShape);
             }
 
-            // MiniMap создаёт отдельную HUD-панель с этим ZIndex
-            UIElement? miniMapPanel =
-                Viewport.Children
-                    .OfType<UIElement>()
-                    .FirstOrDefault(
-                        element =>
-                            Panel.GetZIndex(
-                                element) ==
-                            ZLayer.Interface + 10);
-
-            if (miniMapPanel is not null)
+            foreach (var bullet in
+                     activeBullets)
             {
-                Viewport.Children.Remove(
-                    miniMapPanel);
+                GameArea.Children.Remove(
+                    bullet.VisualShape);
             }
 
             activeBullets.Clear();
             activeEnemies.Clear();
 
-            stationExitMarker =
-                null;
-
-            stationExitZone =
-                null;
-
-            miniMap =
-                null;
-
-            roomManager =
+            stationScene =
                 null;
         }
 
