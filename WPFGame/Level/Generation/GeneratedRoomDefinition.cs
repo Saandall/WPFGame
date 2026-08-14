@@ -145,7 +145,7 @@ namespace WPFGame.Level
             AddPotentialSideDoorPlatforms(
                 room);
 
-            AddDecorations(
+            AddInteriorPlatforms(
                 room);
 
 
@@ -240,9 +240,6 @@ namespace WPFGame.Level
             const double platformWidth =
                 260;
 
-            const double platformHeight =
-                20;
-
             var occupiedCells =
                 OccupiedCells.ToHashSet();
 
@@ -287,28 +284,28 @@ namespace WPFGame.Level
                         platformX,
                         platformY,
                         platformWidth,
-                        platformHeight));
+                        RoomLayoutRules.PlatformHeight));
             }
         }
 
-        // Добавляет простое внутреннее наполнение выбранного типа комнаты
-        private void AddDecorations(
+        // Добавляет внутренние платформы выбранного типа комнаты
+        private void AddInteriorPlatforms(
             RoomTemplate room)
         {
             switch (style)
             {
                 case GeneratedRoomStyle.Compact:
-                    AddCompactDecorations(
+                    AddCompactPlatforms(
                         room);
                     break;
 
                 case GeneratedRoomStyle.Wide:
-                    AddWideDecorations(
+                    AddWidePlatforms(
                         room);
                     break;
 
                 case GeneratedRoomStyle.Tall:
-                    AddTallDecorations(
+                    AddTallPlatforms(
                         room);
                     break;
 
@@ -319,7 +316,7 @@ namespace WPFGame.Level
         }
 
         // Добавляет две платформы в комнате один на один блок
-        private static void AddCompactDecorations(
+        private static void AddCompactPlatforms(
             RoomTemplate room)
         {
             room.Tiles.Add(
@@ -328,7 +325,7 @@ namespace WPFGame.Level
                     120,
                     RoomMetrics.FloorY - 150,
                     220,
-                    20));
+                    RoomLayoutRules.PlatformHeight));
 
             room.Tiles.Add(
                 new TileData(
@@ -336,11 +333,11 @@ namespace WPFGame.Level
                     620,
                     RoomMetrics.FloorY - 230,
                     220,
-                    20));
+                    RoomLayoutRules.PlatformHeight));
         }
 
         // Распределяет платформы между двумя горизонтальными блоками
-        private static void AddWideDecorations(
+        private static void AddWidePlatforms(
             RoomTemplate room)
         {
             room.Tiles.Add(
@@ -349,7 +346,7 @@ namespace WPFGame.Level
                     180,
                     RoomMetrics.FloorY - 150,
                     240,
-                    20));
+                    RoomLayoutRules.PlatformHeight));
 
             room.Tiles.Add(
                 new TileData(
@@ -357,7 +354,7 @@ namespace WPFGame.Level
                     1080,
                     RoomMetrics.FloorY - 220,
                     240,
-                    20));
+                    RoomLayoutRules.PlatformHeight));
 
             room.Tiles.Add(
                 new TileData(
@@ -365,11 +362,11 @@ namespace WPFGame.Level
                     1580,
                     RoomMetrics.FloorY - 130,
                     180,
-                    20));
+                    RoomLayoutRules.PlatformHeight));
         }
 
         // Добавляет платформы на верхнем и нижнем этажах высокой комнаты
-        private static void AddTallDecorations(
+        private static void AddTallPlatforms(
             RoomTemplate room)
         {
             room.Tiles.Add(
@@ -378,7 +375,7 @@ namespace WPFGame.Level
                     100,
                     330,
                     250,
-                    20));
+                    RoomLayoutRules.PlatformHeight));
 
             room.Tiles.Add(
                 new TileData(
@@ -386,7 +383,7 @@ namespace WPFGame.Level
                     610,
                     260,
                     250,
-                    20));
+                    RoomLayoutRules.PlatformHeight));
 
             room.Tiles.Add(
                 new TileData(
@@ -394,7 +391,7 @@ namespace WPFGame.Level
                     120,
                     780,
                     240,
-                    20));
+                    RoomLayoutRules.PlatformHeight));
 
             room.Tiles.Add(
                 new TileData(
@@ -402,7 +399,7 @@ namespace WPFGame.Level
                     610,
                     700,
                     240,
-                    20));
+                    RoomLayoutRules.PlatformHeight));
         }
 
     }

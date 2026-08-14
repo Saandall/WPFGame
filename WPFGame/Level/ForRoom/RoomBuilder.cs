@@ -169,7 +169,7 @@ namespace WPFGame.Level
                     RoomMetrics.TopBottomDoorStartX,
                 floorY,
                 RoomMetrics.TopBottomDoorWidth,
-                20));
+                RoomLayoutRules.PlatformHeight));
         }
 
 
