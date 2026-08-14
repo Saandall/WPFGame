@@ -29,6 +29,7 @@ namespace WPFGame.Level
             }
 
             AddBottomFloors(room);
+            AddOuterBoundaries(room);
 
             return room;
         }
@@ -169,6 +170,196 @@ namespace WPFGame.Level
                 floorY,
                 RoomMetrics.TopBottomDoorWidth,
                 20));
+        }
+
+
+        // Добавляет стены и потолок только по внешним сторонам блоков комнаты
+        private static void AddOuterBoundaries(
+            RoomTemplate room)
+        {
+            foreach (var cell in
+                     room.OccupiedCells)
+            {
+                var leftCell =
+                    (Col: cell.Col - 1, Row: cell.Row);
+
+                if (!room.OccupiedCells.Contains(
+                        leftCell))
+                {
+                    AddSideBoundary(
+                        room,
+                        cell.Col,
+                        cell.Row,
+                        Direction.Left);
+                }
+
+                var rightCell =
+                    (Col: cell.Col + 1, Row: cell.Row);
+
+                if (!room.OccupiedCells.Contains(
+                        rightCell))
+                {
+                    AddSideBoundary(
+                        room,
+                        cell.Col,
+                        cell.Row,
+                        Direction.Right);
+                }
+
+                var topCell =
+                    (Col: cell.Col, Row: cell.Row - 1);
+
+                if (!room.OccupiedCells.Contains(
+                        topCell))
+                {
+                    AddTopBoundary(
+                        room,
+                        cell.Col,
+                        cell.Row);
+                }
+            }
+        }
+
+        // Создаёт боковую стену и оставляет проём у активной боковой двери
+        private static void AddSideBoundary(
+            RoomTemplate room,
+            int cellCol,
+            int cellRow,
+            Direction direction)
+        {
+            DoorSlot? door =
+                room.Doors.FirstOrDefault(
+                    door =>
+                        door.Direction ==
+                            direction &&
+                        door.CellCol ==
+                            cellCol &&
+                        door.CellRow ==
+                            cellRow);
+
+            double cellX =
+                cellCol *
+                RoomMetrics.CellWidth;
+
+            double cellY =
+                cellRow *
+                RoomMetrics.CellHeight;
+
+            double wallX =
+                direction ==
+                Direction.Left
+                    ? cellX
+                    : cellX +
+                      RoomMetrics.CellWidth -
+                      RoomMetrics.BoundaryThickness;
+
+            if (door is null)
+            {
+                room.Tiles.Add(
+                    new TileData(
+                        TileType.Ground,
+                        wallX,
+                        cellY,
+                        RoomMetrics.BoundaryThickness,
+                        RoomMetrics.CellHeight));
+
+                return;
+            }
+
+            double doorStartY =
+                cellY +
+                RoomMetrics.FloorY -
+                RoomMetrics.SideDoorHeight;
+
+            double doorEndY =
+                cellY +
+                RoomMetrics.FloorY;
+
+            if (doorStartY >
+                cellY)
+            {
+                room.Tiles.Add(
+                    new TileData(
+                        TileType.Ground,
+                        wallX,
+                        cellY,
+                        RoomMetrics.BoundaryThickness,
+                        doorStartY -
+                            cellY));
+            }
+
+            double cellBottom =
+                cellY +
+                RoomMetrics.CellHeight;
+
+            if (doorEndY <
+                cellBottom)
+            {
+                room.Tiles.Add(
+                    new TileData(
+                        TileType.Ground,
+                        wallX,
+                        doorEndY,
+                        RoomMetrics.BoundaryThickness,
+                        cellBottom -
+                            doorEndY));
+            }
+        }
+
+        // Создаёт потолок и оставляет проход у активной верхней двери
+        private static void AddTopBoundary(
+            RoomTemplate room,
+            int cellCol,
+            int cellRow)
+        {
+            DoorSlot? topDoor =
+                room.Doors.FirstOrDefault(
+                    door =>
+                        door.Direction ==
+                            Direction.Top &&
+                        door.CellCol ==
+                            cellCol &&
+                        door.CellRow ==
+                            cellRow);
+
+            double cellX =
+                cellCol *
+                RoomMetrics.CellWidth;
+
+            double cellY =
+                cellRow *
+                RoomMetrics.CellHeight;
+
+            if (topDoor is null)
+            {
+                room.Tiles.Add(
+                    new TileData(
+                        TileType.Ground,
+                        cellX,
+                        cellY,
+                        RoomMetrics.CellWidth,
+                        RoomMetrics.BoundaryThickness));
+
+                return;
+            }
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Ground,
+                    cellX,
+                    cellY,
+                    RoomMetrics.TopBottomDoorStartX,
+                    RoomMetrics.BoundaryThickness));
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Ground,
+                    cellX +
+                        RoomMetrics.TopBottomDoorEndX,
+                    cellY,
+                    RoomMetrics.CellWidth -
+                        RoomMetrics.TopBottomDoorEndX,
+                    RoomMetrics.BoundaryThickness));
         }
 
         // Возвращает соседние позиции блока по четырём сторонам
