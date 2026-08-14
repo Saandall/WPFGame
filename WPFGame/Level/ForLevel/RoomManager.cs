@@ -166,6 +166,18 @@ namespace WPFGame.Level
                 playerHeight);
         }
 
+        // Удаляет все визуальные тайлы загруженных комнат
+        public void Unload()
+        {
+            RemoveTiles(
+                currentTiles);
+
+            RemovePendingRoom();
+
+            CurrentRoomChanged =
+                false;
+        }
+
         // Загружает соседа только возле соединённой двери
         private void TryBeginTransition(
             Rect playerHitBox)
@@ -274,14 +286,8 @@ namespace WPFGame.Level
         // Удаляет визуальные тайлы временной соседней комнаты
         private void RemovePendingRoom()
         {
-            foreach (var tile in
-                     pendingTiles)
-            {
-                canvas.Children.Remove(
-                    tile);
-            }
-
-            pendingTiles.Clear();
+            RemoveTiles(
+                pendingTiles);
 
             pendingRoom =
                 null;
@@ -291,6 +297,20 @@ namespace WPFGame.Level
 
             pendingDoorToCurrent =
                 null;
+        }
+
+        // Удаляет переданный набор тайлов из игрового Canvas
+        private void RemoveTiles(
+            List<Rectangle> tiles)
+        {
+            foreach (var tile in
+                     tiles)
+            {
+                canvas.Children.Remove(
+                    tile);
+            }
+
+            tiles.Clear();
         }
 
         // Ограничивает игрока прямоугольником текущей комнаты

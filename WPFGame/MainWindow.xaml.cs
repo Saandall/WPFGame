@@ -198,7 +198,7 @@ namespace WPFGame
                 GameArea);
 
             int levelSeed =
-                gameSession.StartStation(2074000411);
+                gameSession.StartStation();
 
             LoadStationScene(
                 levelSeed);

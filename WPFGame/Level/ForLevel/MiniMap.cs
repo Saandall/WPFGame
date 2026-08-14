@@ -21,6 +21,8 @@ namespace WPFGame.Level
         private const double DoorMarkerEndPadding = 2;
 
         private readonly LevelLayout level;
+        private readonly Canvas viewport;
+        private readonly Border panel;
         private readonly Canvas mapCanvas;
         private readonly Ellipse playerMarker;
 
@@ -59,7 +61,10 @@ namespace WPFGame.Level
                 throw new ArgumentNullException(
                     nameof(level));
 
-            var border =
+            this.viewport =
+                viewport;
+
+            panel =
                 CreateBorder();
 
             var grid =
@@ -81,25 +86,25 @@ namespace WPFGame.Level
             grid.Children.Add(
                 mapCanvas);
 
-            border.Child =
+            panel.Child =
                 grid;
 
             Canvas.SetLeft(
-                border,
+                panel,
                 viewport.Width -
                 PanelWidth -
                 12);
 
             Canvas.SetTop(
-                border,
+                panel,
                 12);
 
             Panel.SetZIndex(
-                border,
+                panel,
                 ZLayer.Interface + 10);
 
             viewport.Children.Add(
-                border);
+                panel);
 
             CalculateMapTransform();
             DrawRooms();
@@ -145,6 +150,13 @@ namespace WPFGame.Level
                 WorldToMapY(
                     playerCenterY) -
                 playerMarker.Height / 2);
+        }
+
+        // Удаляет миникарту из HUD при выгрузке уровня
+        public void Remove()
+        {
+            viewport.Children.Remove(
+                panel);
         }
 
         // Создаёт внешнюю рамку миникарты
