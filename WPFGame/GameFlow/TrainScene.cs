@@ -10,9 +10,6 @@ namespace WPFGame.GameFlow
     // Фиксированная небольшая сцена поезда между процедурными станциями
     public sealed class TrainScene
     {
-        private const double WallThickness =
-            30;
-
         private const double DepartureZoneWidth =
             60;
 
@@ -21,6 +18,8 @@ namespace WPFGame.GameFlow
 
         private readonly List<Rectangle> renderedTiles =
             new();
+
+        private readonly RoomTemplate room;
 
         private Rectangle? departureMarker;
 
@@ -33,23 +32,25 @@ namespace WPFGame.GameFlow
         public TrainScene(
             double holdDuration)
         {
+            room =
+                CreateRoom();
+
             Bounds =
                 new Rect(
                     0,
                     0,
-                    RoomMetrics.CellWidth,
-                    RoomMetrics.CellHeight);
+                    room.Width,
+                    room.Height);
 
             PlayerSpawn =
                 new Point(
-                    110,
-                    RoomMetrics.FloorY -
-                    RoomMetrics.DefaultPlayerHeight);
+                    room.PlayerStartX,
+                    room.PlayerStartY);
 
             Rect departureBounds =
                 new Rect(
-                    RoomMetrics.CellWidth -
-                    WallThickness -
+                    room.Width -
+                    RoomMetrics.BoundaryThickness -
                     DepartureZoneWidth -
                     35,
 
@@ -77,9 +78,6 @@ namespace WPFGame.GameFlow
             {
                 return;
             }
-
-            RoomTemplate room =
-                CreateRoom();
 
             renderedTiles.AddRange(
                 RoomRenderer.Render(
@@ -133,16 +131,20 @@ namespace WPFGame.GameFlow
             DepartureZone.Reset();
         }
 
-        // Создаёт одну фиксированную комнату без LevelLayout и генератора
+        // Создаёт фиксированную комнату поезда через общий RoomBuilder
         private static RoomTemplate CreateRoom()
         {
-            var room =
-                new RoomTemplate(
+            RoomTemplate room =
+                RoomBuilder.Build(
                     "train_room",
                     new[]
                     {
                         (Col: 0, Row: 0)
-                    });
+                    },
+                    System.Array.Empty<(
+                        Direction Direction,
+                        int CellCol,
+                        int CellRow)>());
 
             room.PlayerStartX =
                 110;
@@ -150,39 +152,6 @@ namespace WPFGame.GameFlow
             room.PlayerStartY =
                 RoomMetrics.FloorY -
                 RoomMetrics.DefaultPlayerHeight;
-
-            room.Tiles.Add(
-                new TileData(
-                    TileType.Ground,
-                    0,
-                    RoomMetrics.FloorY,
-                    RoomMetrics.CellWidth,
-                    RoomMetrics.FloorHeight));
-
-            room.Tiles.Add(
-                new TileData(
-                    TileType.Ground,
-                    0,
-                    0,
-                    WallThickness,
-                    RoomMetrics.CellHeight));
-
-            room.Tiles.Add(
-                new TileData(
-                    TileType.Ground,
-                    RoomMetrics.CellWidth -
-                    WallThickness,
-                    0,
-                    WallThickness,
-                    RoomMetrics.CellHeight));
-
-            room.Tiles.Add(
-                new TileData(
-                    TileType.Ground,
-                    0,
-                    0,
-                    RoomMetrics.CellWidth,
-                    WallThickness));
 
             return room;
         }
@@ -217,6 +186,5 @@ namespace WPFGame.GameFlow
                     "InteractionMarker"
             };
         }
-
     }
 }

@@ -148,9 +148,6 @@ namespace WPFGame.Level
             AddDecorations(
                 room);
 
-            // Дополняет сквозные платформы небольшим полностью твёрдым элементом.
-            AddSolidCollisionSample(
-                room);
 
             return room;
         }
@@ -408,47 +405,6 @@ namespace WPFGame.Level
                     20));
         }
 
-        // Добавляет небольшой Ground-элемент для проверки всех сторон твёрдой коллизии
-        private void AddSolidCollisionSample(
-            RoomTemplate room)
-        {
-            switch (style)
-            {
-                case GeneratedRoomStyle.Compact:
-                    room.Tiles.Add(
-                        new TileData(
-                            TileType.Ground,
-                            350,
-                            300,
-                            80,
-                            30));
-                    break;
-
-                case GeneratedRoomStyle.Wide:
-                    room.Tiles.Add(
-                        new TileData(
-                            TileType.Ground,
-                            880,
-                            320,
-                            100,
-                            30));
-                    break;
-
-                case GeneratedRoomStyle.Tall:
-                    room.Tiles.Add(
-                        new TileData(
-                            TileType.Ground,
-                            700,
-                            850,
-                            120,
-                            30));
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(style));
-            }
-        }
     }
 
     // Выбирает схему внутреннего наполнения комнаты
