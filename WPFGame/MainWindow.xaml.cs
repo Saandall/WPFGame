@@ -197,9 +197,13 @@ namespace WPFGame
             trainScene.Unload(
                 GameArea);
 
-            gameSession.StartStation();
+            int levelSeed =
+                gameSession.StartStation(2074000411);
 
-            LoadStationScene();
+            LoadStationScene(
+                levelSeed);
+
+            UpdateStationInfo();
 
             if (stationExitZone is not null)
             {
@@ -208,7 +212,7 @@ namespace WPFGame
             }
 
             System.Diagnostics.Debug.WriteLine(
-                $"[GAME FLOW] Station {gameSession.StationNumber} started.");
+                $"[GAME FLOW] Station {gameSession.StationNumber} started. Seed: {gameSession.CurrentSeed}.");
         }
 
         // Обновляет процедурную станцию
@@ -320,11 +324,9 @@ namespace WPFGame
         }
 
         // Создаёт новую процедурную станцию и переносит в неё игрока
-        private void LoadStationScene()
+        private void LoadStationScene(
+            int levelSeed)
         {
-            int levelSeed =
-                Random.Shared.Next();
-
             LevelLayout level =
                 LevelGenerator.Generate(
                     levelSeed,
@@ -488,6 +490,8 @@ namespace WPFGame
 
             gameSession.EnterTrain();
 
+            UpdateStationInfo();
+
             trainScene.Load(
                 GameArea);
 
@@ -594,6 +598,26 @@ namespace WPFGame
             Panel.SetZIndex(
                 dummy.VisualShape,
                 ZLayer.Enemies);
+        }
+
+        // Показывает номер и seed только для активной процедурной станции
+        private void UpdateStationInfo()
+        {
+            if (gameSession.CurrentScene !=
+                    GameSceneType.Station ||
+                gameSession.CurrentSeed is null)
+            {
+                StationInfoText.Visibility =
+                    Visibility.Collapsed;
+
+                return;
+            }
+
+            StationInfoText.Text =
+                $"Station {gameSession.StationNumber} | Seed: {gameSession.CurrentSeed.Value}";
+
+            StationInfoText.Visibility =
+                Visibility.Visible;
         }
 
         private void ApplyCamera()
