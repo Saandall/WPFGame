@@ -10,7 +10,8 @@ namespace WPFGame.Level
             {
                 CreateCompact(),
                 CreateWide(),
-                CreateTall()
+                CreateTall(),
+                CreateLarge()
             };
         }
 
@@ -139,6 +140,64 @@ namespace WPFGame.Level
                         1)
                 },
                 GeneratedRoomStyle.Tall);
+        }
+
+        // Комната два на два с дверями по всему внешнему контуру
+        private static GeneratedRoomDefinition
+            CreateLarge()
+        {
+            return new GeneratedRoomDefinition(
+                "large_2x2",
+                new[]
+                {
+                    (Col: 0, Row: 0),
+                    (Col: 1, Row: 0),
+                    (Col: 0, Row: 1),
+                    (Col: 1, Row: 1)
+                },
+                new[]
+                {
+                    new DoorSlot(
+                        Direction.Left,
+                        0,
+                        0),
+
+                    new DoorSlot(
+                        Direction.Left,
+                        0,
+                        1),
+
+                    new DoorSlot(
+                        Direction.Right,
+                        1,
+                        0),
+
+                    new DoorSlot(
+                        Direction.Right,
+                        1,
+                        1),
+
+                    new DoorSlot(
+                        Direction.Top,
+                        0,
+                        0),
+
+                    new DoorSlot(
+                        Direction.Top,
+                        1,
+                        0),
+
+                    new DoorSlot(
+                        Direction.Bottom,
+                        0,
+                        1),
+
+                    new DoorSlot(
+                        Direction.Bottom,
+                        1,
+                        1)
+                },
+                GeneratedRoomStyle.Large);
         }
     }
 }
