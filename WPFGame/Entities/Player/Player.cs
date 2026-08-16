@@ -113,15 +113,16 @@ namespace WPFGame.PlayerLogic
                 VelocityY =
                     0;
 
-                if (goUp)
+                if (goUp &&
+                    !goDown)
                 {
-                    Y -=
-                        5;
+                    VelocityY =
+                        -5;
                 }
-
-                if (goDown)
+                else if (goDown &&
+                         !goUp)
                 {
-                    Y +=
+                    VelocityY =
                         5;
                 }
             }

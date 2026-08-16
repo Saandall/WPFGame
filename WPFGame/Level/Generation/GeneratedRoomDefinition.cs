@@ -176,27 +176,41 @@ namespace WPFGame.Level
                     0);
             }
 
-            double ladderHeight =
+            double ladderEndY =
                 room.Height -
                 RoomMetrics.FloorHeight;
 
             foreach (int cellCol in
                      ladderColumns)
             {
+                bool hasTopDoor =
+                    activeDoors.Any(
+                        door =>
+                            door.Direction ==
+                                Direction.Top &&
+                            door.CellCol ==
+                                cellCol);
+
+                double ladderStartY =
+                    hasTopDoor
+                        ? 0
+                        : RoomMetrics.BoundaryThickness;
+
                 room.Tiles.Add(
                     new TileData(
                         TileType.Ladder,
                         RoomLayoutRules.GetCenteredLadderX(
                             cellCol),
-                        0,
+                        ladderStartY,
                         RoomLayoutRules.LadderWidth,
-                        ladderHeight));
+                        ladderEndY -
+                            ladderStartY));
             }
 
             AddBottomDoorLadderExtensions(
                 room,
                 activeDoors,
-                ladderHeight);
+                ladderEndY);
         }
 
         // Продлевает лестницу под платформу нижнего прохода
@@ -265,10 +279,26 @@ namespace WPFGame.Level
                     door.CellCol *
                     RoomMetrics.CellWidth;
 
+                bool isActiveDoor =
+                    room.Doors.Any(
+                        activeDoor =>
+                            activeDoor.Direction ==
+                                door.Direction &&
+                            activeDoor.CellCol ==
+                                door.CellCol &&
+                            activeDoor.CellRow ==
+                                door.CellRow);
+
+                double wallOverlap =
+                    isActiveDoor
+                        ? 0
+                        : RoomMetrics.BoundaryThickness;
+
                 double platformX =
                     door.Direction ==
                     Direction.Left
-                        ? cellX
+                        ? cellX +
+                          wallOverlap
                         : cellX +
                           RoomMetrics.CellWidth -
                           platformWidth;
@@ -283,7 +313,8 @@ namespace WPFGame.Level
                         TileType.Platform,
                         platformX,
                         platformY,
-                        platformWidth,
+                        platformWidth -
+                            wallOverlap,
                         RoomLayoutRules.PlatformHeight));
             }
         }

@@ -273,7 +273,8 @@ namespace WPFGame.Level
 
             double doorEndY =
                 cellY +
-                RoomMetrics.FloorY;
+                RoomMetrics.FloorY +
+                RoomLayoutRules.PlatformHeight;
 
             if (doorStartY >
                 cellY)
