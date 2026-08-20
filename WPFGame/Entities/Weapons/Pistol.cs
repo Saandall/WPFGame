@@ -2,7 +2,6 @@ using System.Windows;
 using System.Windows.Controls;
 using WPFGame.Core;
 using WPFGame.Enemies;
-using WPFGame.Projectiles;
 
 namespace WPFGame.Weapons
 {
@@ -13,7 +12,7 @@ namespace WPFGame.Weapons
          Name = "Colt Python";
          Damage = 25;
          MaxAmmo = 6;
-         Ammo = 106;
+         Ammo = 6;
          ReserveAmmo = 1024;
          reloadTimeFrames = 90; // ????? ???????? ?????????????? 1.5 ??????? (90 ??????)
 

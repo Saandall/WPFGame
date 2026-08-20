@@ -1,6 +1,4 @@
 using System.Windows.Controls;
-using WPFGame.Projectiles;
-using WPFGame.Core;
 
 namespace WPFGame.Weapons
 {

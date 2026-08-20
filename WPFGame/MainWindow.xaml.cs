@@ -10,7 +10,6 @@ using WPFGame.Enemies;
 using WPFGame.GameFlow;
 using WPFGame.Level;
 using WPFGame.PlayerLogic;
-using WPFGame.Projectiles;
 using WPFGame.Weapons;
 
 namespace WPFGame
@@ -19,7 +18,6 @@ namespace WPFGame
    {
       private readonly DispatcherTimer gameTimer = new();
 
-      private readonly List<Bullet> activeBullets = new();
       private readonly List<Enemy> activeEnemies = new();
       private readonly List<Line> activeTracers = new();
 
@@ -243,13 +241,6 @@ namespace WPFGame
             }
          }
 
-         // Поддерживает оставшийся projectile pipeline.
-         CombatManager.UpdateBulletsAndHits(
-            activeBullets,
-            activeEnemies,
-            GameArea,
-            stationScene.ActiveBounds.Right);
-
          AmmoText.Text = currentWeapon.IsReloading
             ? "Перезарядка..."
             : $"{currentWeapon.Ammo} / {currentWeapon.ReserveAmmo}";
@@ -380,17 +371,11 @@ namespace WPFGame
             GameArea.Children.Remove(enemy.VisualShape);
          }
 
-         foreach (Bullet bullet in activeBullets)
-         {
-            GameArea.Children.Remove(bullet.VisualShape);
-         }
-
          foreach (Line tracer in activeTracers)
          {
             GameArea.Children.Remove(tracer);
          }
 
-         activeBullets.Clear();
          activeEnemies.Clear();
          activeTracers.Clear();
 
