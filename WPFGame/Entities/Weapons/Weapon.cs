@@ -1,4 +1,4 @@
-using System.Windows.Controls;
+п»їusing System.Windows.Controls;
 
 namespace WPFGame.Weapons
 {
@@ -7,65 +7,65 @@ namespace WPFGame.Weapons
       public string Name { get; set; }
       public int Damage { get; set; }
 
-      // Свойства для патронов (protected set значит, что менять их могут только наследники, например Pistol)
+      // РЎРІРѕР№СЃС‚РІР° РґР»СЏ РїР°С‚СЂРѕРЅРѕРІ (protected set Р·РЅР°С‡РёС‚, С‡С‚Рѕ РјРµРЅСЏС‚СЊ РёС… РјРѕРіСѓС‚ С‚РѕР»СЊРєРѕ РЅР°СЃР»РµРґРЅРёРєРё, РЅР°РїСЂРёРјРµСЂ Pistol)
       public int Ammo { get; protected set; }
       public int MaxAmmo { get; protected set; }
       public int ReserveAmmo { get; protected set; }
 
-      // --- НОВЫЕ СВОЙСТВА ДЛЯ ПЕРЕЗАРЯДКИ ---
-      public bool IsReloading { get; protected set; } // Флаг перезарядки
-      protected int reloadTimer = 0;                  // Сам таймер
-      protected int reloadTimeFrames = 60;            // Сколько кадров длится перезарядка (60 = ~1 сек)
+      // --- РќРћР’Р«Р• РЎР’РћР™РЎРўР’Рђ Р”Р›РЇ РџР•Р Р•Р—РђР РЇР”РљР ---
+      public bool IsReloading { get; protected set; } // Р¤Р»Р°Рі РїРµСЂРµР·Р°СЂСЏРґРєРё
+      protected int reloadTimer = 0;                  // РЎР°Рј С‚Р°Р№РјРµСЂ
+      protected int reloadTimeFrames = 60;            // РЎРєРѕР»СЊРєРѕ РєР°РґСЂРѕРІ РґР»РёС‚СЃСЏ РїРµСЂРµР·Р°СЂСЏРґРєР° (60 = ~1 СЃРµРє)
 
-      // --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ СТРЕЛЬБЫ ---
-      public bool IsAutomatic { get; protected set; } // Автомат (true) или Пистолет (false)?
-      protected int fireRateFrames = 0;               // Задержка между выстрелами (в кадрах)
-      protected int fireCooldownTimer = 0;            // Текущий таймер задержки
-      protected bool triggerReady = true;             // Отпустил ли игрок курок?
+      // --- РќРћР’Р«Р• РџР•Р Р•РњР•РќРќР«Р• Р”Р›РЇ РЎРўР Р•Р›Р¬Р‘Р« ---
+      public bool IsAutomatic { get; protected set; } // РђРІС‚РѕРјР°С‚ (true) РёР»Рё РџРёСЃС‚РѕР»РµС‚ (false)?
+      protected int fireRateFrames = 0;               // Р—Р°РґРµСЂР¶РєР° РјРµР¶РґСѓ РІС‹СЃС‚СЂРµР»Р°РјРё (РІ РєР°РґСЂР°С…)
+      protected int fireCooldownTimer = 0;            // РўРµРєСѓС‰РёР№ С‚Р°Р№РјРµСЂ Р·Р°РґРµСЂР¶РєРё
+      protected bool triggerReady = true;             // РћС‚РїСѓСЃС‚РёР» Р»Рё РёРіСЂРѕРє РєСѓСЂРѕРє?
 
       public abstract void Attack(Canvas GameArea, double playerX, double playerY, List<WPFGame.Enemies.Enemy> enemies,
                             System.Windows.Controls.UIElementCollection mapElements,
                             List<System.Windows.Shapes.Line> tracers);
 
-      // Метод, который будет вызываться каждый кадр
+      // РњРµС‚РѕРґ, РєРѕС‚РѕСЂС‹Р№ Р±СѓРґРµС‚ РІС‹Р·С‹РІР°С‚СЊСЃСЏ РєР°Р¶РґС‹Р№ РєР°РґСЂ
       public void Tick(bool isShootingHeld)
       {
-         // Если мы в процессе перезарядки, уменьшаем таймер
+         // Р•СЃР»Рё РјС‹ РІ РїСЂРѕС†РµСЃСЃРµ РїРµСЂРµР·Р°СЂСЏРґРєРё, СѓРјРµРЅСЊС€Р°РµРј С‚Р°Р№РјРµСЂ
          if (IsReloading)
          {
             reloadTimer--;
 
-            // Когда таймер дошел до нуля - ВЫДАЕМ ПАТРОНЫ
+            // РљРѕРіРґР° С‚Р°Р№РјРµСЂ РґРѕС€РµР» РґРѕ РЅСѓР»СЏ - Р’Р«Р”РђР•Рњ РџРђРўР РћРќР«
             if (reloadTimer <= 0)
             {
                FinishReload();
             }
          }
-         // 2. Таймер скорострельности (охлаждение ствола)
+         // 2. РўР°Р№РјРµСЂ СЃРєРѕСЂРѕСЃС‚СЂРµР»СЊРЅРѕСЃС‚Рё (РѕС…Р»Р°Р¶РґРµРЅРёРµ СЃС‚РІРѕР»Р°)
          if (fireCooldownTimer > 0)
          {
             fireCooldownTimer--;
          }
 
-         // 3. Проверка спускового крючка
+         // 3. РџСЂРѕРІРµСЂРєР° СЃРїСѓСЃРєРѕРІРѕРіРѕ РєСЂСЋС‡РєР°
          if (!isShootingHeld)
          {
             triggerReady = true;
          }
       }
 
-      // Метод перезарядки
+      // РњРµС‚РѕРґ РїРµСЂРµР·Р°СЂСЏРґРєРё
       public void Reload()
       {
-         // Если уже перезаряжаемся, магазин полон или нет запаса — ничего не делаем
+         // Р•СЃР»Рё СѓР¶Рµ РїРµСЂРµР·Р°СЂСЏР¶Р°РµРјСЃСЏ, РјР°РіР°Р·РёРЅ РїРѕР»РѕРЅ РёР»Рё РЅРµС‚ Р·Р°РїР°СЃР° вЂ” РЅРёС‡РµРіРѕ РЅРµ РґРµР»Р°РµРј
          if (IsReloading || Ammo == MaxAmmo || ReserveAmmo <= 0) return;
 
-         // Начинаем перезарядку!
-         IsReloading = true;             // Включаем флаг для HUD и блокировки стрельбы
-         reloadTimer = reloadTimeFrames; // Заводим таймер (на 90 кадров, как указано в Pistol)
+         // РќР°С‡РёРЅР°РµРј РїРµСЂРµР·Р°СЂСЏРґРєСѓ!
+         IsReloading = true;             // Р’РєР»СЋС‡Р°РµРј С„Р»Р°Рі РґР»СЏ HUD Рё Р±Р»РѕРєРёСЂРѕРІРєРё СЃС‚СЂРµР»СЊР±С‹
+         reloadTimer = reloadTimeFrames; // Р—Р°РІРѕРґРёРј С‚Р°Р№РјРµСЂ (РЅР° 90 РєР°РґСЂРѕРІ, РєР°Рє СѓРєР°Р·Р°РЅРѕ РІ Pistol)
       }
 
-      // Вспомогательный метод (сама математика выдачи патронов)
+      // Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№ РјРµС‚РѕРґ (СЃР°РјР° РјР°С‚РµРјР°С‚РёРєР° РІС‹РґР°С‡Рё РїР°С‚СЂРѕРЅРѕРІ)
       private void FinishReload()
       {
          int bulletsNeeded = MaxAmmo - Ammo;
@@ -74,7 +74,7 @@ namespace WPFGame.Weapons
          Ammo += bulletsToLoad;
          ReserveAmmo -= bulletsToLoad;
 
-         IsReloading = false; // Перезарядка окончена!
+         IsReloading = false; // РџРµСЂРµР·Р°СЂСЏРґРєР° РѕРєРѕРЅС‡РµРЅР°!
       }
    }
 

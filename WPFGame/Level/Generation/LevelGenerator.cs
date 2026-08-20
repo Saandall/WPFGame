@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Создаёт связную цепочку комнат по заданному seed
     public static class LevelGenerator

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -41,12 +41,10 @@ namespace WPFGame.Core
           double? previousY = null)
       {
          double startX =
-             previousX ??
-             X;
+             previousX ?? X;
 
          double startY =
-             previousY ??
-             Y;
+             previousY ?? Y;
 
          // Горизонтальное движение уже выполнено наследником.
          // Здесь только корректируется пересечение с твёрдой стеной.

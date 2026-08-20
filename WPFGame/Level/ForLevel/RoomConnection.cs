@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Указывает конкретную дверь конкретного экземпляра комнаты
     public readonly record struct RoomDoorReference(

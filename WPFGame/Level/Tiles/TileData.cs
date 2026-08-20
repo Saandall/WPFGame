@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Одна запись про один тайл: какой тайл, где находится, какого размера.
     public readonly struct TileData

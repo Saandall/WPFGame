@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Рассчитывает положение комнаты по совмещаемым дверям
     public static class RoomPlacement

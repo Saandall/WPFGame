@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Собирает стандартную оболочку комнаты из блоков
     public static class RoomBuilder

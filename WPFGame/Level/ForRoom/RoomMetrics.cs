@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Общие размеры блоков, пола и дверных проёмов
     public static class RoomMetrics

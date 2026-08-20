@@ -1,4 +1,4 @@
-using System.Windows.Controls;
+п»їusing System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using WPFGame.Core;
@@ -10,10 +10,10 @@ namespace WPFGame.PlayerLogic
       public bool IsClimbing { get; private set; }
       public bool FacingRight { get; private set; } = true;
 
-      // Запрещает автоматический прыжок после выхода с лестницы.
+      // Р—Р°РїСЂРµС‰Р°РµС‚ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРёР№ РїСЂС‹Р¶РѕРє РїРѕСЃР»Рµ РІС‹С…РѕРґР° СЃ Р»РµСЃС‚РЅРёС†С‹.
       private bool preventAutoJump;
 
-      // На несколько кадров отключает столкновение с платформами.
+      // РќР° РЅРµСЃРєРѕР»СЊРєРѕ РєР°РґСЂРѕРІ РѕС‚РєР»СЋС‡Р°РµС‚ СЃС‚РѕР»РєРЅРѕРІРµРЅРёРµ СЃ РїР»Р°С‚С„РѕСЂРјР°РјРё.
       private int dropCooldown;
 
       private int speed = 5;
@@ -28,6 +28,7 @@ namespace WPFGame.PlayerLogic
          Width = 20;
          Height = 50;
 
+         // РћС‚СЂРёСЃРѕРІРєР° РїСЂСЏРјРѕСѓРіРѕР»СЊРЅРёРєР° РЅР°С€РµРіРѕ РїРµСЂСЃРѕРЅР°Р¶Р°
          VisualShape = new Rectangle
          {
             Width = Width,
@@ -36,11 +37,11 @@ namespace WPFGame.PlayerLogic
          };
       }
 
-      // Обновляет управление и физику в мировых координатах.
+      // РћР±РЅРѕРІР»СЏРµС‚ СѓРїСЂР°РІР»РµРЅРёРµ Рё С„РёР·РёРєСѓ РІ РјРёСЂРѕРІС‹С… РєРѕРѕСЂРґРёРЅР°С‚Р°С….
       public void Update(
          UIElementCollection mapElements)
       {
-         // Сохраняет позицию до движения для определения стороны столкновения.
+         // РЎРѕС…СЂР°РЅСЏРµС‚ РїРѕР·РёС†РёСЋ РґРѕ РґРІРёР¶РµРЅРёСЏ РґР»СЏ РѕРїСЂРµРґРµР»РµРЅРёСЏ СЃС‚РѕСЂРѕРЅС‹ СЃС‚РѕР»РєРЅРѕРІРµРЅРёСЏ.
          double previousX = X;
          double previousY = Y;
 
@@ -83,7 +84,7 @@ namespace WPFGame.PlayerLogic
 
          double currentGravity = 0.8;
 
-         // На лестнице вертикальное движение проходит через общую физику.
+         // РќР° Р»РµСЃС‚РЅРёС†Рµ РІРµСЂС‚РёРєР°Р»СЊРЅРѕРµ РґРІРёР¶РµРЅРёРµ РїСЂРѕС…РѕРґРёС‚ С‡РµСЂРµР· РѕР±С‰СѓСЋ С„РёР·РёРєСѓ.
          if (IsClimbing)
          {
             currentGravity = 0;
@@ -116,7 +117,7 @@ namespace WPFGame.PlayerLogic
             previousX,
             previousY);
 
-         // Сбрасывает climbing state после выхода из диапазона лестницы.
+         // РЎР±СЂР°СЃС‹РІР°РµС‚ climbing state РїРѕСЃР»Рµ РІС‹С…РѕРґР° РёР· РґРёР°РїР°Р·РѕРЅР° Р»РµСЃС‚РЅРёС†С‹.
          if (!TouchingLadder)
          {
             if (IsClimbing)
@@ -127,7 +128,7 @@ namespace WPFGame.PlayerLogic
             IsClimbing = false;
          }
 
-         // Включает climbing state при движении по доступной лестнице.
+         // Р’РєР»СЋС‡Р°РµС‚ climbing state РїСЂРё РґРІРёР¶РµРЅРёРё РїРѕ РґРѕСЃС‚СѓРїРЅРѕР№ Р»РµСЃС‚РЅРёС†Рµ.
          if (TouchingLadder &&
              !IsClimbing)
          {
@@ -152,7 +153,7 @@ namespace WPFGame.PlayerLogic
             }
          }
 
-         // Позволяет сойти с лестницы в сторону на твёрдой поверхности.
+         // РџРѕР·РІРѕР»СЏРµС‚ СЃРѕР№С‚Рё СЃ Р»РµСЃС‚РЅРёС†С‹ РІ СЃС‚РѕСЂРѕРЅСѓ РЅР° С‚РІС‘СЂРґРѕР№ РїРѕРІРµСЂС…РЅРѕСЃС‚Рё.
          if (IsClimbing &&
              OnGround &&
              (goLeft || goRight) &&

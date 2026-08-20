@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Создаёт набор форм, доступных первому генератору
     public static class GeneratedRoomCatalog

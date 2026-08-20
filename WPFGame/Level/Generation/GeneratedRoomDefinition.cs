@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Определяет форму и допустимые позиции дверей генерируемой комнаты
     public class GeneratedRoomDefinition

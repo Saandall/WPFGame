@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Стандартные правила размещения содержимого внутри блока комнаты
     public static class RoomLayoutRules

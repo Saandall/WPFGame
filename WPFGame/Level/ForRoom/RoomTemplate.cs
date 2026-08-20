@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Хранит форму, геометрию и точки взаимодействия одной заготовки комнаты
     public class RoomTemplate

@@ -1,17 +1,17 @@
-using System.Windows.Media;
+п»їusing System.Windows.Media;
 
 namespace WPFGame.Enemies
 {
    public class Zombie : Enemy
    {
-      // Передаем X, Y и ХП в базовый конструктор Enemy
+      // РџРµСЂРµРґР°РµРј X, Y Рё РҐРџ РІ Р±Р°Р·РѕРІС‹Р№ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ Enemy
       public Zombie(double startX, double startY, int maxHealth) : base(startX, startY, maxHealth)
       {
-         // Меняем цвет, чтобы отличать Зомби от манекена
+         // РњРµРЅСЏРµРј С†РІРµС‚, С‡С‚РѕР±С‹ РѕС‚Р»РёС‡Р°С‚СЊ Р—РѕРјР±Рё РѕС‚ РјР°РЅРµРєРµРЅР°
          VisualShape.Fill = Brushes.DarkGreen;
       }
 
-      // Переопределяем урон (Зомби получает в 2 раза меньше урона)
+      // РџРµСЂРµРѕРїСЂРµРґРµР»СЏРµРј СѓСЂРѕРЅ (Р—РѕРјР±Рё РїРѕР»СѓС‡Р°РµС‚ РІ 2 СЂР°Р·Р° РјРµРЅСЊС€Рµ СѓСЂРѕРЅР°)
       public override bool TakeDamage(int damage)
       {
          Health -= (damage / 2);
@@ -20,4 +20,4 @@ namespace WPFGame.Enemies
    }
 }
 
-// НЕ ДОБАВЛЯТЬ!
+// РќР• Р”РћР‘РђР’Р›РЇРўР¬!

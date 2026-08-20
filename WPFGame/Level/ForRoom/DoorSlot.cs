@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Возможное место двери на внешней стороне блока
     public sealed class DoorSlot
