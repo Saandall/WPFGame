@@ -152,7 +152,7 @@ namespace WPFGame.Level
             return room;
         }
 
-        // Добавляет лестницы к вертикальным переходам и этажам высокой комнаты
+        // Добавляет лестницы к вертикальным переходам и многоэтажным комнатам
         private void AddVerticalAccess(
             RoomTemplate room,
             IReadOnlyCollection<DoorSlot> activeDoors)
@@ -176,27 +176,49 @@ namespace WPFGame.Level
                     0);
             }
 
-            double ladderHeight =
+            if (style ==
+                    GeneratedRoomStyle.Large &&
+                ladderColumns.Count == 0)
+            {
+                ladderColumns.Add(
+                    0);
+            }
+
+            double ladderEndY =
                 room.Height -
                 RoomMetrics.FloorHeight;
 
             foreach (int cellCol in
                      ladderColumns)
             {
+                bool hasTopDoor =
+                    activeDoors.Any(
+                        door =>
+                            door.Direction ==
+                                Direction.Top &&
+                            door.CellCol ==
+                                cellCol);
+
+                double ladderStartY =
+                    hasTopDoor
+                        ? 0
+                        : RoomMetrics.BoundaryThickness;
+
                 room.Tiles.Add(
                     new TileData(
                         TileType.Ladder,
                         RoomLayoutRules.GetCenteredLadderX(
                             cellCol),
-                        0,
+                        ladderStartY,
                         RoomLayoutRules.LadderWidth,
-                        ladderHeight));
+                        ladderEndY -
+                            ladderStartY));
             }
 
             AddBottomDoorLadderExtensions(
                 room,
                 activeDoors,
-                ladderHeight);
+                ladderEndY);
         }
 
         // Продлевает лестницу под платформу нижнего прохода
@@ -265,10 +287,26 @@ namespace WPFGame.Level
                     door.CellCol *
                     RoomMetrics.CellWidth;
 
+                bool isActiveDoor =
+                    room.Doors.Any(
+                        activeDoor =>
+                            activeDoor.Direction ==
+                                door.Direction &&
+                            activeDoor.CellCol ==
+                                door.CellCol &&
+                            activeDoor.CellRow ==
+                                door.CellRow);
+
+                double wallOverlap =
+                    isActiveDoor
+                        ? 0
+                        : RoomMetrics.BoundaryThickness;
+
                 double platformX =
                     door.Direction ==
                     Direction.Left
-                        ? cellX
+                        ? cellX +
+                          wallOverlap
                         : cellX +
                           RoomMetrics.CellWidth -
                           platformWidth;
@@ -283,7 +321,8 @@ namespace WPFGame.Level
                         TileType.Platform,
                         platformX,
                         platformY,
-                        platformWidth,
+                        platformWidth -
+                            wallOverlap,
                         RoomLayoutRules.PlatformHeight));
             }
         }
@@ -306,6 +345,11 @@ namespace WPFGame.Level
 
                 case GeneratedRoomStyle.Tall:
                     AddTallPlatforms(
+                        room);
+                    break;
+
+                case GeneratedRoomStyle.Large:
+                    AddLargePlatforms(
                         room);
                     break;
 
@@ -402,6 +446,67 @@ namespace WPFGame.Level
                     RoomLayoutRules.PlatformHeight));
         }
 
+        // Добавляет платформы для перемещения по комнате два на два
+        private static void AddLargePlatforms(
+            RoomTemplate room)
+        {
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Platform,
+                    320,
+                    330,
+                    280,
+                    RoomLayoutRules.PlatformHeight));
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Platform,
+                    700,
+                    250,
+                    280,
+                    RoomLayoutRules.PlatformHeight));
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Platform,
+                    1080,
+                    250,
+                    280,
+                    RoomLayoutRules.PlatformHeight));
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Platform,
+                    1460,
+                    330,
+                    280,
+                    RoomLayoutRules.PlatformHeight));
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Platform,
+                    180,
+                    800,
+                    240,
+                    RoomLayoutRules.PlatformHeight));
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Platform,
+                    760,
+                    720,
+                    240,
+                    RoomLayoutRules.PlatformHeight));
+
+            room.Tiles.Add(
+                new TileData(
+                    TileType.Platform,
+                    1320,
+                    800,
+                    240,
+                    RoomLayoutRules.PlatformHeight));
+        }
+
     }
 
     // Выбирает схему внутреннего наполнения комнаты
@@ -409,6 +514,7 @@ namespace WPFGame.Level
     {
         Compact,
         Wide,
-        Tall
+        Tall,
+        Large
     }
 }
