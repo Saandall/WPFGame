@@ -126,6 +126,7 @@ namespace WPFGame.Weapons
             StrokeThickness = 2,
             Opacity = 1.0 // Полностью непрозрачный
          };
+         tracer.Tag = 5; // количество кадров, которое будет показываться вектор
 
          GameArea.Children.Add(tracer);
          tracers.Add(tracer); // Добавляем в список, чтобы потом плавно растворить

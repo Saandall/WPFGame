@@ -176,8 +176,8 @@ namespace WPFGame
          Viewport.MouseMove += (s, e) =>
          {
             var position = e.GetPosition(Viewport);
-            Inputmanager.MouseX = position.X;
-            Inputmanager.MouseY = position.Y;
+            Inputmanager.MouseX = position.X + camera.X;
+            Inputmanager.MouseY = position.Y + camera.Y;
 
             Title = $"Mouse: {Inputmanager.MouseX:F0}; {Inputmanager.MouseY:F0}";
          };
@@ -214,6 +214,26 @@ namespace WPFGame
          currentWeapon.Tick(Inputmanager.Shooting);
          if (Inputmanager.Reloading) currentWeapon.Reload();
          if (Inputmanager.Shooting) currentWeapon.Attack(GameArea, myHero.X + myHero.Width / 2, myHero.Y + myHero.Height / 2, activeEnemies, GameArea.Children, activeTracers);
+
+         // Уменьшаем время жизни трассеров, чтобы далее его удалить с экрана
+         for (int i = activeTracers.Count - 1; i >= 0; i--)
+         {
+            var tracer = activeTracers[i];
+
+            int framesLeft = (int)tracer.Tag;
+            framesLeft--;
+
+            if (framesLeft <= 0)
+            {
+               GameArea.Children.Remove(tracer);
+               activeTracers.RemoveAt(i);
+            }
+            else
+            {
+               tracer.Tag = framesLeft;
+            }
+         }
+
          CombatManager.UpdateBulletsAndHits(activeBullets, activeEnemies, GameArea, roomManager.CurrentRoom.Width);
 
          // 3. ИНТЕРФЕЙС
