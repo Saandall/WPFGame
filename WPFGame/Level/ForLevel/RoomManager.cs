@@ -288,7 +288,7 @@ namespace WPFGame.Level
 
             pendingRoom =
                 null;
-
+          
             currentDoorToPending =
                 null;
 
