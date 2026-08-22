@@ -20,6 +20,32 @@ namespace WPFGame.Weapons
          fireRateFrames = 15; // Количество кадров задержки между выстрелами 
       }
 
+      private Point FindCollisionPoint(Point freePoint, Point hitPoint, Func<Point, bool> isCollision)
+      {
+         Point low = freePoint;
+         Point high = hitPoint;
+
+         // 6 итераций дают достаточно высокую точность
+         // на отрезке длиной 10 пикселей.
+         for (int i = 0; i < 6; i++)
+         {
+            Point middle = new Point(
+                (low.X + high.X) / 2,
+                (low.Y + high.Y) / 2);
+
+            if (isCollision(middle))
+            {
+               high = middle;
+            }
+            else
+            {
+               low = middle;
+            }
+         }
+
+         return high;
+      }
+
       public override void Attack(Canvas GameArea, double playerX, double playerY, List<WPFGame.Enemies.Enemy> enemies,
                             System.Windows.Controls.UIElementCollection mapElements,
                             List<System.Windows.Shapes.Line> tracers)
@@ -66,6 +92,7 @@ namespace WPFGame.Weapons
 
          for (double traveled = 0; traveled < maxDistance; traveled += rayStep)
          {
+            Point previousPoint = new Point(currentX, currentY);
             currentX += dirX * rayStep;
             currentY += dirY * rayStep;
 
@@ -78,6 +105,11 @@ namespace WPFGame.Weapons
             {
                if (enemy.HitBox.Contains(checkPoint))
                {
+                  Point collisionPoint = FindCollisionPoint(previousPoint, checkPoint, point => enemy.HitBox.Contains(point));
+
+                  currentX = collisionPoint.X;
+                  currentY = collisionPoint.Y;
+
                   if (enemy.TakeDamage(Damage))
                      hitEnemy = enemy;
 
@@ -103,6 +135,11 @@ namespace WPFGame.Weapons
                      Rect wallHitBox = new Rect(Canvas.GetLeft(element), Canvas.GetTop(element), element.Width, element.Height);
                      if (wallHitBox.Contains(checkPoint))
                      {
+                        Point collisionPoint = FindCollisionPoint(previousPoint, checkPoint, point => wallHitBox.Contains(point));
+
+                        currentX = collisionPoint.X;
+                        currentY = collisionPoint.Y;
+
                         hitSomething = true;
                         break;
                      }
@@ -129,5 +166,7 @@ namespace WPFGame.Weapons
          GameArea.Children.Add(tracer);
          tracers.Add(tracer);
       }
+
+
    }
 }
