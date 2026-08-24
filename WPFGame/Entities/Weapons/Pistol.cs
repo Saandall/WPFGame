@@ -1,5 +1,7 @@
+п»їusing System.Windows;
 using System.Windows.Controls;
-using WPFGame.Projectiles;
+using WPFGame.Core;
+using WPFGame.Enemies;
 
 namespace WPFGame.Weapons
 {
@@ -11,48 +13,161 @@ namespace WPFGame.Weapons
          Damage = 25;
          MaxAmmo = 6;
          Ammo = 6;
-         ReserveAmmo = 24;
-         reloadTimeFrames = 90; // Пусть пистолет перезаряжается 1.5 секунды (90 кадров)
+         ReserveAmmo = 1024;
+         reloadTimeFrames = 90; // РєРѕР»РёС‡РµСЃС‚РІРѕ РєР°РґСЂРѕРІ РґР»РёС‚РµР»СЊРЅРѕСЃС‚Рё РїРµСЂРµР·Р°СЂСЏРґРєРё (90 РєР°РґСЂРѕРІ = 1.5 СЃРµРєСѓРЅРґС‹)
 
          IsAutomatic = false;
-         fireRateFrames = 15; // четверть секунды
+         fireRateFrames = 15; // РљРѕР»РёС‡РµСЃС‚РІРѕ РєР°РґСЂРѕРІ Р·Р°РґРµСЂР¶РєРё РјРµР¶РґСѓ РІС‹СЃС‚СЂРµР»Р°РјРё 
       }
 
-      public override void Attack(Canvas GameArea, double playerX, double playerY, bool facingRight, List<Bullet> activeBullets)
+      // РџРѕРёСЃРє РіСЂР°РЅРёС†С‹ tile, С‡С‚РѕР±С‹ РїСЂРµСЂРІР°С‚СЊ РІРµРєС‚РѕСЂ. РџРѕРёСЃРє - Р±РёРЅР°СЂРЅС‹Р№
+      private Point FindCollisionPoint(Point freePoint, Point hitPoint, Func<Point, bool> isCollision)
       {
-         // 1. Блокируем стрельбу во время перезарядки
-         if (IsReloading) return;
-         // Проверяем, есть ли патроны. Если нет - просто выходим (осечка).
-         if (Ammo <= 0) return;
+         Point low = freePoint;
+         Point high = hitPoint;
 
-         // 1. Проверка скорострельности (если ствол еще не остыл - выходим)
-         if (fireCooldownTimer > 0) return;
+         // 6 РёС‚РµСЂР°С†РёР№ РґР°СЋС‚ РґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РІС‹СЃРѕРєСѓСЋ С‚РѕС‡РЅРѕСЃС‚СЊ
+         // РЅР° РѕС‚СЂРµР·РєРµ РґР»РёРЅРѕР№ 10 РїРёРєСЃРµР»РµР№.
+         for (int i = 0; i < 6; i++)
+         {
+            Point middle = new Point(
+                (low.X + high.X) / 2,
+                (low.Y + high.Y) / 2);
 
-         // 2. Проверка зажатой кнопки (если это не автомат, и курок еще нажат - выходим)
-         if (!IsAutomatic && !triggerReady) return;
+            if (isCollision(middle))
+            {
+               high = middle;
+            }
+            else
+            {
+               low = middle;
+            }
+         }
+
+         return high;
+      }
+
+      public override void Attack(Canvas GameArea, double playerX, double playerY, List<WPFGame.Enemies.Enemy> enemies,
+                            System.Windows.Controls.UIElementCollection mapElements,
+                            List<System.Windows.Shapes.Line> tracers)
+      {
+
+         if (IsReloading || Ammo <= 0 || fireCooldownTimer > 0 || (!IsAutomatic && !triggerReady)) return;
 
          Ammo -= 1;
-         double spawnX = facingRight ? playerX + 50 : playerX - 10;
-         double spawnY = playerY + 20;
 
-         // Пулька
-         Bullet newBullet = new Bullet(spawnX, spawnY, 15, facingRight, Damage);
+         fireCooldownTimer = fireRateFrames; // РўР° СЃР°РјР°СЏ Р·Р°РґРµСЂР¶РєР°
+         triggerReady = false;               // РќРµ РїРѕР·РІРѕР»СЏРµС‚ "Р·Р°Р¶Р°С‚СЊ" СЃ РїРёСЃС‚РѕР»РµС‚Р° Рё СЃС‚СЂРµР»СЏС‚СЊ РєР°Рє Р°РІС‚РѕРјР°С‚. РўРѕР»СЊРєРѕ РѕРґРёРЅРѕС‡РЅС‹Рµ РІС‹СЃС‚СЂРµР»С‹
 
-         // Добавляем пульку физически
-         activeBullets.Add(newBullet);
-
-         // Добавляем пульку визуально
-         GameArea.Children.Add(newBullet.VisualShape);
-
-         // --- ПОСЛЕ ВЫСТРЕЛА ---
-         fireCooldownTimer = fireRateFrames; // Запускаем задержку до следующего выстрела
-         triggerReady = false;               // Блокируем курок (пока игрок не отпустит кнопку Z)
-
-         // Автоматическая перезарядка
+         // РђРІС‚РѕРјР°С‚РёС‡РµСЃРєР°СЏ РїРµСЂРµР·Р°СЂСЏРґРєР°
          if (Ammo == 0 && ReserveAmmo > 0)
          {
             Reload();
          }
+
+         // --- Р›РѕРіРёРєР° СЃС‚СЂРµР»СЊР±С‹ ---
+         // Р’ РґР°Р»СЊРЅРµР№С€РµРј (РїСЂРё РґРѕР±Р°РІР»РµРЅРёРё РґСЂРѕР±РѕРІРёРєР° Рё Р°РІС‚РѕРјР°С‚Р°) РѕР±С‰Р°СЏ Р»РѕРіРёРєР° РїРµСЂРµР№РґС‘С‚ РІ РѕС‚РґРµР»СЊРЅС‹Р№ С„Р°Р№Р»
+         
+         // РўРѕС‡РєР° "РѕС‚СЃС‡С‘С‚Р°" РґР»СЏ РІРµРєС‚РѕСЂР°
+         double startX = playerX;
+         double startY = playerY;
+
+         // СЂР°Р·РЅРёС†Р° РєРѕРѕСЂРґРёРЅР°С‚ РєСѓСЂСЃРѕСЂР° Рё С‚РѕС‡РєРё "РѕС‚СЃС‡С‘С‚Р°"
+         double dx = Inputmanager.MouseX - startX;
+         double dy = Inputmanager.MouseY - startY;
+
+         double distance = Math.Sqrt(dx * dx + dy * dy);
+
+         if (distance < 0.001)
+            return;
+
+         double dirX = dx / distance;
+         double dirY = dy / distance;
+
+         // RAYCASTING 
+         double currentX = startX;
+         double currentY = startY;
+         double maxDistance = 1000; // РќР°РёР±РѕР»СЊС€Р°СЏ РґР»РёРЅР° РІРµРєС‚РѕСЂР° РІС‹СЃС‚СЂРµР»Р°
+         double rayStep = 10; // РЁР°Рі, С‡РµСЂРµР· РєРѕС‚РѕСЂС‹Р№ РїСЂРѕРІРµСЂСЏРµС‚СЃСЏ, СЃС‚РѕР»РєРЅСѓР»СЃСЏ Р»Рё РІРµРєС‚РѕСЂ СЃ РўР°Р№Р»РѕРј
+         bool hitSomething = false;
+
+         for (double traveled = 0; traveled < maxDistance; traveled += rayStep)
+         {
+            Point previousPoint = new Point(currentX, currentY);
+            currentX += dirX * rayStep;
+            currentY += dirY * rayStep;
+
+            // РўРѕС‡РєР° РїСЂРѕРІРµСЂРєРё
+            Point checkPoint = new Point(currentX, currentY);
+            Enemy hitEnemy = null;
+            
+            // Р›РѕРіРёРєР° РїРѕРїР°РґР°РЅРёСЏ РІРѕ РІСЂР°РіР°
+            foreach (var enemy in enemies)
+            {
+               if (enemy.HitBox.Contains(checkPoint))
+               {
+                  Point collisionPoint = FindCollisionPoint(previousPoint, checkPoint, point => enemy.HitBox.Contains(point));
+
+                  currentX = collisionPoint.X;
+                  currentY = collisionPoint.Y;
+
+                  if (enemy.TakeDamage(Damage))
+                     hitEnemy = enemy;
+
+                  hitSomething = true;
+                  break;
+               }
+            }
+
+            if (hitEnemy != null)
+            {
+               GameArea.Children.Remove(hitEnemy.VisualShape);
+               enemies.Remove(hitEnemy);
+            }
+
+            // Р›РѕРіРёРєР° РїРѕРїР°РґР°РЅРёСЏ РІ Ground Рё Platform 
+            if (!hitSomething)
+            {
+               foreach (var element in mapElements.OfType<System.Windows.Shapes.Rectangle>())
+               {
+                  string tag = (string)element.Tag;
+                  if (tag == "Ground" || tag == "Platform")
+                  {
+                     Rect wallHitBox = new Rect(Canvas.GetLeft(element), Canvas.GetTop(element), element.Width, element.Height);
+                     if (wallHitBox.Contains(checkPoint))
+                     {
+                        Point collisionPoint = FindCollisionPoint(previousPoint, checkPoint, point => wallHitBox.Contains(point));
+
+                        currentX = collisionPoint.X;
+                        currentY = collisionPoint.Y;
+
+                        hitSomething = true;
+                        break;
+                     }
+                  }
+               }
+            }
+
+            if (hitSomething) break;
+         }
+
+         // РћС‚СЂРёСЃРѕРІРєР° РІРµРєС‚РѕСЂР°
+         System.Windows.Shapes.Line tracer = new System.Windows.Shapes.Line
+         {
+            X1 = startX,
+            Y1 = startY,
+            X2 = currentX,
+            Y2 = currentY,
+            Stroke = System.Windows.Media.Brushes.White, // РџРѕРєСЂР°С€РµРЅ РІ Р±РµР»С‹Р№ РєР°Рє РІ Final Station
+            StrokeThickness = 1, // РўРѕР»С‰РёРЅР° РІРµРєС‚РѕСЂР°
+            Opacity = 1.0 
+         };
+         tracer.Tag = 5; // РљРѕР»РёС‡РµСЃС‚РІРѕ РєР°РґСЂРѕРІ, РЅР° РєРѕС‚РѕСЂС‹С… Р±СѓРґРµС‚ РІРёРґРµРЅ РІРµРєС‚РѕСЂ
+
+         GameArea.Children.Add(tracer);
+         tracers.Add(tracer);
       }
+
+
    }
 }

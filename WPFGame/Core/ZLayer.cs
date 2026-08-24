@@ -1,4 +1,4 @@
-namespace WPFGame.Core
+﻿namespace WPFGame.Core
 {
     // Определяет порядок отрисовки объектов на игровом Canvas
     public static class ZLayer

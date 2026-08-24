@@ -1,13 +1,13 @@
-using System.Windows.Media;
+п»їusing System.Windows.Media;
 using System.Windows.Shapes;
-using WPFGame.Core; // Подключаем папку Core, где лежит Entity
+using WPFGame.Core; // РџРѕРґРєР»СЋС‡Р°РµРј РїР°РїРєСѓ Core, РіРґРµ Р»РµР¶РёС‚ Entity
 
 namespace WPFGame.Enemies
 {
-   // Наследуемся от Entity! Теперь у нас есть HitBox, гравитация и физика.
+   // РќР°СЃР»РµРґСѓРµРјСЃСЏ РѕС‚ Entity! РўРµРїРµСЂСЊ Сѓ РЅР°СЃ РµСЃС‚СЊ HitBox, РіСЂР°РІРёС‚Р°С†РёСЏ Рё С„РёР·РёРєР°.
    public class Enemy : Entity
    {
-      // protected set позволяет наследникам (например, Зомби) менять это значение
+      // protected set РїРѕР·РІРѕР»СЏРµС‚ РЅР°СЃР»РµРґРЅРёРєР°Рј (РЅР°РїСЂРёРјРµСЂ, Р—РѕРјР±Рё) РјРµРЅСЏС‚СЊ СЌС‚Рѕ Р·РЅР°С‡РµРЅРёРµ
       public int Health { get; protected set; }
 
       public Enemy(double startX, double startY, int maxHealth)
@@ -18,7 +18,7 @@ namespace WPFGame.Enemies
          Height = 50;
          Health = maxHealth;
 
-         // Рисуем красного болванчика
+         // Р РёСЃСѓРµРј РєСЂР°СЃРЅРѕРіРѕ Р±РѕР»РІР°РЅС‡РёРєР°
          VisualShape = new Rectangle
          {
             Width = this.Width,
@@ -27,7 +27,7 @@ namespace WPFGame.Enemies
          };
       }
 
-      // Делаем метод virtual, чтобы Зомби и Роботы могли менять логику урона
+      // Р”РµР»Р°РµРј РјРµС‚РѕРґ virtual, С‡С‚РѕР±С‹ Р—РѕРјР±Рё Рё Р РѕР±РѕС‚С‹ РјРѕРіР»Рё РјРµРЅСЏС‚СЊ Р»РѕРіРёРєСѓ СѓСЂРѕРЅР°
       public virtual bool TakeDamage(int damage)
       {
          Health -= damage;

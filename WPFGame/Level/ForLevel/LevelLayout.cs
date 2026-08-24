@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Хранит готовое расположение комнат и связи между их дверями
     public class LevelLayout

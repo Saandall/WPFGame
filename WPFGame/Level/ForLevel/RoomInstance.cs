@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Описывает конкретное размещение шаблона комнаты в уровне
     public class RoomInstance

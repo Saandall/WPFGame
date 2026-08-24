@@ -1,4 +1,4 @@
-using System.Windows.Input;
+﻿using System.Windows.Input;
 
 namespace WPFGame.Core
 {
@@ -14,8 +14,11 @@ namespace WPFGame.Core
         public static bool Reloading { get; private set; }
         public static bool Interacting { get; private set; }
 
-        // Переводит нажатия WPF-клавиш в состояние управления
-        public static void UpdateKeyState(
+        public static double MouseX { get; set; }
+        public static double MouseY { get; set; }
+
+      // Переводит нажатия WPF-клавиш в состояние управления
+      public static void UpdateKeyState(
             Key key,
             bool isPressed)
         {

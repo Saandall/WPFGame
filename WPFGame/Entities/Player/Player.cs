@@ -1,214 +1,176 @@
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using WPFGame.Core;
 
 namespace WPFGame.PlayerLogic
 {
-    public class Player : Entity
-    {
-        public bool IsClimbing { get; private set; }
-        public bool FacingRight { get; private set; } = true;
+   public class Player : Entity
+   {
+      public bool IsClimbing { get; private set; }
+      public bool FacingRight { get; private set; } = true;
 
-        // Запрещает автоматический прыжок после выхода с лестницы
-        private bool preventAutoJump;
+      // Запрещает автоматический прыжок после выхода с лестницы.
+      private bool preventAutoJump;
 
-        // На несколько кадров отключает столкновение с платформами
-        private int dropCooldown;
+      // На несколько кадров отключает столкновение с платформами.
+      private int dropCooldown;
 
-        public Player(
-            double startX,
-            double startY)
-        {
-            X = startX;
-            Y = startY;
+      private int speed = 5;
 
-            Width = 20;
-            Height = 50;
+      public Player(
+         double startX,
+         double startY)
+      {
+         X = startX;
+         Y = startY;
 
-            VisualShape =
-                new Rectangle
-                {
-                    Width =
-                        Width,
+         Width = 20;
+         Height = 50;
 
-                    Height =
-                        Height,
+         // Отрисовка прямоугольника нашего персонажа
+         VisualShape = new Rectangle
+         {
+            Width = Width,
+            Height = Height,
+            Fill = Brushes.LimeGreen
+         };
+      }
 
-                    Fill =
-                        Brushes.LimeGreen
-                };
-        }
+      // Обновляет управление и физику в мировых координатах.
+      public void Update(
+         UIElementCollection mapElements)
+      {
+         // Сохраняет позицию до движения для определения стороны столкновения.
+         double previousX = X;
+         double previousY = Y;
 
-        // Обновляет управление и физику, не ограничивая мировые координаты
-        public void Update(
-            UIElementCollection mapElements)
-        {
-            // Сохраняются координаты до обычного движения игрока.
-            // Entity использует их только для определения стороны столкновения.
-            double previousX =
-                X;
+         bool goLeft = Inputmanager.GoLeft;
+         bool goRight = Inputmanager.GoRight;
+         bool goUp = Inputmanager.GoUp;
+         bool goDown = Inputmanager.GoDown;
+         bool jumping = Inputmanager.Jumping;
 
-            double previousY =
-                Y;
+         if (!jumping)
+         {
+            preventAutoJump = false;
+         }
 
-            bool goLeft =
-                Inputmanager.GoLeft;
+         if (goLeft)
+         {
+            FacingRight = false;
+         }
 
-            bool goRight =
-                Inputmanager.GoRight;
+         if (goRight)
+         {
+            FacingRight = true;
+         }
 
-            bool goUp =
-                Inputmanager.GoUp;
+         if (dropCooldown > 0)
+         {
+            dropCooldown--;
+         }
 
-            bool goDown =
-                Inputmanager.GoDown;
+         if (goDown &&
+             jumping &&
+             OnGround)
+         {
+            dropCooldown = 10;
+         }
 
-            bool jumping =
-                Inputmanager.Jumping;
+         bool canStandOnPlatforms =
+            dropCooldown == 0 &&
+            !IsClimbing;
 
-            if (!jumping)
+         double currentGravity = 0.8;
+
+         // На лестнице вертикальное движение проходит через общую физику.
+         if (IsClimbing)
+         {
+            currentGravity = 0;
+            VelocityY = 0;
+
+            if (goUp && !goDown)
             {
-                preventAutoJump =
-                    false;
+               VelocityY = -speed;
             }
-
-            if (goLeft)
+            else if (goDown && !goUp)
             {
-                FacingRight =
-                    false;
+               VelocityY = speed;
             }
+         }
 
-            if (goRight)
-            {
-                FacingRight =
-                    true;
-            }
+         if (goLeft)
+         {
+            X -= speed;
+         }
 
-            if (dropCooldown > 0)
-            {
-                dropCooldown--;
-            }
+         if (goRight)
+         {
+            X += speed;
+         }
 
-            if (goDown &&
-                jumping &&
-                OnGround)
-            {
-                dropCooldown =
-                    10;
-            }
+         base.UpdatePhysics(
+            mapElements,
+            currentGravity,
+            canStandOnPlatforms,
+            previousX,
+            previousY);
 
-            bool canStandOnPlatforms =
-                dropCooldown == 0 &&
-                !IsClimbing;
-
-            double currentGravity =
-                0.8;
-
+         // Сбрасывает climbing state после выхода из диапазона лестницы.
+         if (!TouchingLadder)
+         {
             if (IsClimbing)
             {
-                currentGravity =
-                    0;
-
-                VelocityY =
-                    0;
-
-                if (goUp)
-                {
-                    Y -=
-                        5;
-                }
-
-                if (goDown)
-                {
-                    Y +=
-                        5;
-                }
+               preventAutoJump = true;
             }
 
-            // Горизонтальное движение остаётся таким же,
-            // как в стабильной версии до добавления стен.
-            if (goLeft)
+            IsClimbing = false;
+         }
+
+         // Включает climbing state при движении по доступной лестнице.
+         if (TouchingLadder &&
+             !IsClimbing)
+         {
+            double feetY =
+               Y +
+               Height;
+
+            if (feetY <=
+                ActiveLadderTop + 10)
             {
-                X -=
-                    15;
+               if (goDown)
+               {
+                  IsClimbing = true;
+                  VelocityY = 0;
+               }
             }
-
-            if (goRight)
+            else if (goUp ||
+                     goDown)
             {
-                X +=
-                    15;
+               IsClimbing = true;
+               VelocityY = 0;
             }
+         }
 
-            base.UpdatePhysics(
-                mapElements,
-                currentGravity,
-                canStandOnPlatforms,
-                previousX,
-                previousY);
+         // Позволяет сойти с лестницы в сторону на твёрдой поверхности.
+         if (IsClimbing &&
+             OnGround &&
+             (goLeft || goRight) &&
+             !goUp &&
+             !goDown)
+         {
+            IsClimbing = false;
+         }
 
-            if (!TouchingLadder)
-            {
-                if (IsClimbing)
-                {
-                    preventAutoJump =
-                        true;
-                }
-
-                IsClimbing =
-                    false;
-            }
-
-            if (TouchingLadder &&
-                !IsClimbing)
-            {
-                double feetY =
-                    Y +
-                    Height;
-
-                if (feetY <=
-                    ActiveLadderTop + 10)
-                {
-                    if (goDown)
-                    {
-                        IsClimbing =
-                            true;
-
-                        VelocityY =
-                            0;
-                    }
-                }
-                else if (goUp ||
-                         goDown)
-                {
-                    IsClimbing =
-                        true;
-
-                    VelocityY =
-                        0;
-                }
-            }
-
-            if (IsClimbing &&
-                OnGround &&
-                (goLeft ||
-                 goRight) &&
-                !goUp &&
-                !goDown)
-            {
-                IsClimbing =
-                    false;
-            }
-
-            if (jumping &&
-                OnGround &&
-                !IsClimbing &&
-                !goDown &&
-                !preventAutoJump)
-            {
-                VelocityY =
-                    -15;
-            }
-        }
-    }
+         if (jumping &&
+             OnGround &&
+             !IsClimbing &&
+             !goDown &&
+             !preventAutoJump)
+         {
+            VelocityY = -15;
+         }
+      }
+   }
 }

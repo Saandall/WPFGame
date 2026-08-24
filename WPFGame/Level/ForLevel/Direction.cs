@@ -1,4 +1,4 @@
-namespace WPFGame.Level
+﻿namespace WPFGame.Level
 {
     // Стороны комнаты и направления дверных проходов
     public enum Direction
